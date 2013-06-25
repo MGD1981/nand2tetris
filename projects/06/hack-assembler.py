@@ -31,38 +31,23 @@ def run_symbol_pass(hack_file):
         line = cleanup(line)
         if line == '':
             continue
-        loc = 0
         if '@' in line or '=' in line or ';' in line:
             line_number += 1
 
-        if line[loc] == '(':
+        if line[0] == '(':
             eol = line.index(')')
-            address_label = line[loc+1:eol]
+            address_label = line[1:eol]
             symbol_table[address_label] = line_number + 1
     f.close()
 
-    ram = 16
-    f = open(hack_file, 'r')
-    for line in f:
-        line = cleanup(line)
-        if line == '':
-            continue
-        loc = 0
-        if line[loc] == '@':
-            eol = find_eol(line) 
-            address_label = line[loc+1:eol]
-            if (address_label not in symbol_table and
-                         not address_label.isdigit()):
-                symbol_table[address_label] = ram
-                ram = ram + 1
-    f.close()
     return symbol_table
 
 def run_assembler_pass(hack_file, symbol_table):
     new_file_name = hack_file.replace('asm', 'hack')
     h = open(new_file_name, 'w') # h is new '.hack' file
     f = open(hack_file, 'r')
-    # Second Run-Through
+    ram = 16
+    
     for line in f:
         ignore = False
         i = '111'
@@ -81,25 +66,24 @@ def run_assembler_pass(hack_file, symbol_table):
             ignore = True
         if line[loc] == '@': # Writes the address to h
             eol = find_eol(line)
-            try:
-                address = int(line[loc+1:eol])
-            except ValueError:
-                address = line[loc+1:eol]
-                if address not in symbol_table:
-                    pdb.set_trace()
-                    print "Error: symbol not defined!  ", address
-                    f.close()
-                    break
-                address = symbol_table[address]            
+            address_label = line[loc+1:eol]
+            if (address_label not in symbol_table and
+                        not address_label.isdigit()):
+                symbol_table[address_label] = ram
+                ram += 1
+            if address_label.isdigit():
+                address = int(address_label)
+            else:
+                address = symbol_table[address_label]            
             if address >= 32768:
                 print "Error: address larger than 15 bits!"
                 f.close()
                 break
-            address = bin(address)
-            address = address[2:]
-            extra_0s = 16 - len(address)
-            address = '0' * extra_0s + address
-            h.write(address + '\n')
+            bin_address_uf = bin(address)
+            bin_address = bin_address_uf[2:]
+            extra_0s = 16 - len(bin_address)
+            readable_address = '0' * extra_0s + bin_address
+            h.write(readable_address + '\n')
             ignore = True
             loc = len(line)-1
 
