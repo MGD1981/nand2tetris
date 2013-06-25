@@ -20,16 +20,16 @@ def find_eol(line):
 
 def run_symbol_pass(hack_file):
     #pdb.set_trace()
-    s = open(hack_file, 'r') # s is copy file for first pass
+
 
     symbol_table = {'SP':0, 'LCL':1, 'ARG':2, 'THIS':3, 'THAT':4,
                     'R0':0, 'R1':1, 'R2':2, 'R3':3, 'R4':4, 'R5':5, 'R6':6, 'R7':7,
                     'R8':8, 'R9':9, 'R10':10, 'R11':11, 'R12':12, 'R13':13,
                     'R14':14, 'R15':15, 'SCREEN':16384, 'KBD':24576}
-    used_addresses = []
 
     # First Run-Through
     line_number = -1
+    s = open(hack_file, 'r') # s is copy file for first pass
     for line in s:
         line = cleanup(line)
         if line == '':
@@ -42,27 +42,25 @@ def run_symbol_pass(hack_file):
             eol = line.index(')')
             address_label = line[loc+1:eol]
             symbol_table[address_label] = line_number + 1
+    s.close()
 
+    ram = 16
+    s = open(hack_file, 'r') # s is copy file for first pass
+    for line in s:
+        line = cleanup(line)
+        if line == '':
+            continue
+        loc = 0
         if line[loc] == '@':
             eol = find_eol(line) 
             address_label = line[loc+1:eol]
-            if address_label not in symbol_table:
-                try:
-                    used_addresses.append(int(address_label))
-                except ValueError:
-                    symbol_table[address_label] = None # Creates symbol  w/ placeholder
-                
-    ram = 16
-    for address_label in symbol_table: # Assigns addresses to symbols
-        if symbol_table[address_label] == None:
-            while ram in used_addresses:
-                ram += 1
-            symbol_table[address_label] = ram
-            used_addresses.append(ram)
+            if address_label not in symbol_table and not address_label.isdigit():
+                symbol_table[address_label] = ram
+                ram = ram + 1
 
-    return (symbol_table, used_addresses)
+    return symbol_table
 
-def run_assembler_pass(hack_file, symbol_table, used_addresses):
+def run_assembler_pass(hack_file, symbol_table):
     h = open(hack_file[0:len(hack_file)-4] + '.hack2', 'w') # h is new '.hack' file
     f = open(hack_file, 'r') # f is original file
     # Second Run-Through
@@ -88,7 +86,7 @@ def run_assembler_pass(hack_file, symbol_table, used_addresses):
                 address = line[loc+1:eol]
                 if address not in symbol_table:
                     pdb.set_trace()
-                    print "Error: symbol not defined!"
+                    print "Error: symbol not defined!  ", address
                     f.close()
                     break
                 address = symbol_table[address]            
@@ -187,5 +185,5 @@ def run_assembler_pass(hack_file, symbol_table, used_addresses):
 if __name__ == '__main__':
     script, hack_file = argv
 
-    symbol_table, used_addresses = run_symbol_pass(hack_file)
-    run_assembler_pass(hack_file, symbol_table, used_addresses)
+    symbol_table = run_symbol_pass(hack_file)
+    run_assembler_pass(hack_file, symbol_table)

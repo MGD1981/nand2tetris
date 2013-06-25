@@ -7,7 +7,7 @@ for infile in */*.asm; do
     
     if [ -s $cmpfile ]; then
 
-	./hack-assembler.py $infile
+	./hack_assembler.py $infile
 	foo=$(diff $cmpfile $outfile)
 	echo ${foo}
 	if [ ! -z ${foo} ]; then
