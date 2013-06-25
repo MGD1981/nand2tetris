@@ -1,3 +1,4 @@
+#! /usr/local/bin/python
 from sys import argv
 import pdb
 
@@ -23,7 +24,7 @@ def find_eol(line):
 #pdb.set_trace()
 f = open(hack_file, 'r') # f is original file
 s = open(hack_file, 'r') # s is copy file for first pass
-h = open(hack_file[0:len(hack_file)-4] + '.hack', 'w') # h is new '.hack' file
+h = open(hack_file[0:len(hack_file)-4] + '.hack2', 'w') # h is new '.hack' file
 symbol_table = {'SP':0, 'LCL':1, 'ARG':2, 'THIS':3, 'THAT':4,
                 'R0':0, 'R1':1, 'R2':2, 'R3':3, 'R4':4, 'R5':5, 'R6':6, 'R7':7,
                 'R8':8, 'R9':9, 'R10':10, 'R11':11, 'R12':12, 'R13':13,
@@ -98,7 +99,6 @@ for line in f:
         address = address[2:]
         extra_0s = 16 - len(address)
         address = '0' * extra_0s + address
-        print '+ Address ' + address + '\n'
         h.write(address + '\n')
         ignore = True
         loc = len(line)-1
@@ -175,10 +175,7 @@ for line in f:
     newline = str(newline)
     newline = (newline.replace('[','').replace(']','').replace(
                ',','').replace(' ',''))
-    if ignore == True: 
-        print "No data; skipping line.\n"
-    else:
-        print "+ Instruction " + newline + '\n'
+    if not ignore: 
         h.write(newline + '\n')
 
 h.close()
