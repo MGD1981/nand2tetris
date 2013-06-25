@@ -2,12 +2,12 @@
 #! /bin/bash
 
 for infile in */*.asm; do
-    cmpfile=$(echo $infile | sed s/'.asm'/'.hack'/)
+    cmpfile=$(echo $infile | sed s/'.asm'/'.hackcmp'/)
     outfile=$(echo $infile | sed s/'.asm'/'.hack2'/)
     
     if [ -s $cmpfile ]; then
 
-	./hack_assembler.py $infile
+	./hack-assembler.py $infile
 	foo=$(diff $cmpfile $outfile)
 	echo ${foo}
 	if [ ! -z ${foo} ]; then
