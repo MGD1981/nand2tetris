@@ -2,9 +2,6 @@
 from sys import argv
 import pdb
 
-
-script, hack_file = argv
-
 def cleanup(line):
     loc = 0
     line = line.replace(' ','') # Deletes white space
@@ -21,46 +18,52 @@ def find_eol(line):
         eol = line.index(';')
     return eol 
 
-#pdb.set_trace()
-f = open(hack_file, 'r') # f is original file
-s = open(hack_file, 'r') # s is copy file for first pass
-h = open(hack_file[0:len(hack_file)-4] + '.hack2', 'w') # h is new '.hack' file
-symbol_table = {'SP':0, 'LCL':1, 'ARG':2, 'THIS':3, 'THAT':4,
-                'R0':0, 'R1':1, 'R2':2, 'R3':3, 'R4':4, 'R5':5, 'R6':6, 'R7':7,
-                'R8':8, 'R9':9, 'R10':10, 'R11':11, 'R12':12, 'R13':13,
-                'R14':14, 'R15':15, 'SCREEN':16384, 'KBD':24576}
-used_addresses = []
+def run_symbol_pass(hack_file):
+    #pdb.set_trace()
+
+
+    symbol_table = {'SP':0, 'LCL':1, 'ARG':2, 'THIS':3, 'THAT':4,
+                    'R0':0, 'R1':1, 'R2':2, 'R3':3, 'R4':4, 'R5':5, 'R6':6, 'R7':7,
+                    'R8':8, 'R9':9, 'R10':10, 'R11':11, 'R12':12, 'R13':13,
+                    'R14':14, 'R15':15, 'SCREEN':16384, 'KBD':24576}
 
     # First Run-Through
-def populate_symbol_table(s):
     line_number = -1
+    s = open(hack_file, 'r') # s is copy file for first pass
     for line in s:
         line = cleanup(line)
         if line == '':
             continue
+        loc = 0
         if '@' in line or '=' in line or ';' in line:
             line_number += 1
 
-        if line[0] == '(':
+        if line[loc] == '(':
             eol = line.index(')')
-            address_label = line[1:eol]
+            address_label = line[loc+1:eol]
             symbol_table[address_label] = line_number + 1
+    s.close()
 
-        if line[0] == '@':
-            eol = find_eol(line) 
-            address_label = line[1:eol]
-            if address_label not in symbol_table:
-                try:
-                    used_addresses.append(int(address_label))
-                except ValueError:
-                    symbol_table[address_label] = None # Creates symbol 
-                                                       # w/ placeholder
-    return (symbol_table, used_addresses)
-
-
-def make_hack(f, symbol_table, used_addresses):
-    # Second Run-Through
     ram = 16
+    s = open(hack_file, 'r') # s is copy file for first pass
+    for line in s:
+        line = cleanup(line)
+        if line == '':
+            continue
+        loc = 0
+        if line[loc] == '@':
+            eol = find_eol(line) 
+            address_label = line[loc+1:eol]
+            if address_label not in symbol_table and not address_label.isdigit():
+                symbol_table[address_label] = ram
+                ram = ram + 1
+
+    return symbol_table
+
+def run_assembler_pass(hack_file, symbol_table):
+    h = open(hack_file[0:len(hack_file)-4] + '.hack2', 'w') # h is new '.hack' file
+    f = open(hack_file, 'r') # f is original file
+    # Second Run-Through
     for line in f:
         ignore = False
         i = [1,1,1]
@@ -83,14 +86,10 @@ def make_hack(f, symbol_table, used_addresses):
                 address = line[loc+1:eol]
                 if address not in symbol_table:
                     pdb.set_trace()
-                    print "Error: symbol not defined!"
+                    print "Error: symbol not defined!  ", address
                     f.close()
                     break
-                while ram in used_addresses:
-                    ram += 1
-                address = ram
-                symbol_table[address] = address
-                used_addresses.append(address)
+                address = symbol_table[address]            
             if address >= 32768:
                 print "Error: address larger than 15 bits!"
                 f.close()
@@ -114,7 +113,7 @@ def make_hack(f, symbol_table, used_addresses):
             elif j_code == 'LE': j = [1,1,0]
             elif j_code == 'MP': j = [1,1,1]
             loc = 0
-        
+
         if '=' in line: # Write the instruction to h
             loc = line.index('=')
             if 'A' in line[:loc]:
@@ -177,9 +176,15 @@ def make_hack(f, symbol_table, used_addresses):
                    ',','').replace(' ',''))
         if not ignore: 
             h.write(newline + '\n')
+
     h.close()
+    f.close()
 
-symbol_table, used_addresses = populate_symbol_table(s)
-make_hack(f, symbol_table, used_addresses)
 
-f.close()
+
+if __name__ == '__main__':
+    script, hack_file = argv
+
+    symbol_table = run_symbol_pass(hack_file)
+    run_assembler_pass(hack_file, symbol_table)
+
