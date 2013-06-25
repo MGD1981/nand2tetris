@@ -42,13 +42,30 @@ def run_symbol_pass(hack_file):
 
     return symbol_table
 
+
 def run_assembler_pass(hack_file, symbol_table):
     new_file_name = hack_file.replace('asm', 'hack')
     h = open(new_file_name, 'w') # h is new '.hack' file
     f = open(hack_file, 'r')
     ram = 16
     
+    def determine_line_type(line):
+        eol = find_eol(line)
+        if '@' in line:
+            if line[line.index('@')+1:eol].isdigit():
+                return "address load by location"
+            else:
+                return "address load by symbol"
+        if ';J' in line:
+            return "jump command"
+        if '=' in line:
+            return "computation"
+        else:
+            return "garbage"
+
     for line in f:
+
+        # Line initialization
         ignore = False
         i = '111'
         a = '0'
@@ -61,20 +78,21 @@ def run_assembler_pass(hack_file, symbol_table):
         if line == '':
             continue
         loc = 0
-        if ('@' not in line and '=' not in line and
-            ';' not in line):
-            ignore = True
-        if line[loc] == '@': # Writes the address to h
+        line_type = determine_line_type(line)
+
+        if line_type == "garbage": 
+            continue
+
+        if line_type[:12] == "address load": # Writes the address to h
             eol = find_eol(line)
             address_label = line[loc+1:eol]
-            if (address_label not in symbol_table and
-                        not address_label.isdigit()):
-                symbol_table[address_label] = ram
-                ram += 1
-            if address_label.isdigit():
+            if line_type == "address load by symbol":
+                if address_label not in symbol_table:
+                    symbol_table[address_label] = ram
+                    ram += 1
+                address = symbol_table[address_label]
+            if line_type == "address load by location": 
                 address = int(address_label)
-            else:
-                address = symbol_table[address_label]            
             if address >= 32768:
                 print "Error: address larger than 15 bits!"
                 f.close()
@@ -84,10 +102,10 @@ def run_assembler_pass(hack_file, symbol_table):
             extra_0s = 16 - len(bin_address)
             readable_address = '0' * extra_0s + bin_address
             h.write(readable_address + '\n')
-            ignore = True
+            continue
             loc = len(line)-1
 
-        if ';J' in line:
+        if line_type == "jump command":
             loc = line.index(';J') 
             j_code = line[loc+2:loc+4]
             if j_code == 'GT': j = '001'
@@ -99,7 +117,7 @@ def run_assembler_pass(hack_file, symbol_table):
             elif j_code == 'MP': j = '111'
             loc = 0
 
-        if '=' in line: # Write the instruction to h
+        if line_type == "computation": # Write the instruction to h
             loc = line.index('=')
             if 'A' in line[:loc]:
                 d0 = '1'
@@ -151,8 +169,7 @@ def run_assembler_pass(hack_file, symbol_table):
 
 
         newline = i + a + c + d0 + d1 + d2 + j + '\n' 
-        if not ignore: 
-            h.write(newline)
+        h.write(newline)
 
     h.close()
     f.close()
