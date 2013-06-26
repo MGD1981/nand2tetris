@@ -63,71 +63,15 @@ def run_assembler_pass(hack_file, symbol_table):
         else:
             return "garbage"
 
-    for line in f:
-
-        # Line initialization
-        ignore = False
-        i = '111'
+    def c_code(line):
         a = '0'
-        c = '000000'
-        d0 = '0' 
-        d1 = '0'
-        d2 = '0'
-        j = '000'
-        line = cleanup(line)
-        if line == '':
-            continue
+        c = None
+        eol = find_eol(line)
         loc = 0
-        line_type = determine_line_type(line)
-
-        if line_type == "garbage": 
-            continue
-
-        if line_type[:12] == "address load": # Writes the address to h
-            eol = find_eol(line)
-            address_label = line[loc+1:eol]
-            if line_type == "address load by symbol":
-                if address_label not in symbol_table:
-                    symbol_table[address_label] = ram
-                    ram += 1
-                address = symbol_table[address_label]
-            if line_type == "address load by location": 
-                address = int(address_label)
-            if address >= 32768:
-                print "Error: address larger than 15 bits!"
-                f.close()
-                break
-            bin_address_uf = bin(address)
-            bin_address = bin_address_uf[2:]
-            extra_0s = 16 - len(bin_address)
-            readable_address = '0' * extra_0s + bin_address
-            h.write(readable_address + '\n')
-            continue
-            loc = len(line)-1
-
-        if line_type == "jump command":
-            loc = line.index(';J') 
-            j_code = line[loc+2:loc+4]
-            if j_code == 'GT': j = '001'
-            elif j_code == 'EQ': j = '010'
-            elif j_code == 'GE': j = '011'
-            elif j_code == 'LT': j = '100'
-            elif j_code == 'NE': j = '101'
-            elif j_code == 'LE': j = '110'
-            elif j_code == 'MP': j = '111'
-            loc = 0
-
-        if line_type == "computation": # Write the instruction to h
-            loc = line.index('=')
-            if 'A' in line[:loc]:
-                d0 = '1'
-            if 'D' in line[:loc]:
-                d1 = '1'
-            if 'M' in line[:loc]:
-                d2 = '1'
-            loc += 1
-        eol = find_eol(line)  
+        if '=' in line:
+            loc = line.index('=') + 1
         comp = line[loc:eol]
+
         if 'M' in comp:
             a = '1'
         if comp == '0':
@@ -166,9 +110,82 @@ def run_assembler_pass(hack_file, symbol_table):
             c = '000000'
         elif comp == 'D|A' or comp == 'D|M':
             c = '010101'
+        return a + c
 
 
-        newline = i + a + c + d0 + d1 + d2 + j + '\n' 
+    def d_code(line):
+        d0 = '0'
+        d1 = '0'
+        d2 = '0'
+        loc = line.index('=')
+        if 'A' in line[:loc]:
+            d0 = '1'
+        if 'D' in line[:loc]:
+            d1 = '1'
+        if 'M' in line[:loc]:
+            d2 = '1'
+        return d0 + d1 + d2
+
+    def j_code(line):
+        loc = line.index(';J') 
+        j_abbrev = line[loc+2:loc+4]
+        if j_abbrev == 'GT': j = '001'
+        elif j_abbrev == 'EQ': j = '010'
+        elif j_abbrev == 'GE': j = '011'
+        elif j_abbrev == 'LT': j = '100'
+        elif j_abbrev == 'NE': j = '101'
+        elif j_abbrev == 'LE': j = '110'
+        elif j_abbrev == 'MP': j = '111'
+        return j 
+
+
+    for line in f:
+
+        # Line initialization
+        ignore = False
+        i = '111'
+        d = '000' 
+        j = '000'
+        line = cleanup(line)
+        if line == '':
+            continue
+        loc = 0
+        line_type = determine_line_type(line)
+
+        if line_type == "garbage": 
+            continue
+
+        if line_type[:12] == "address load": # Writes the address to h
+            eol = find_eol(line)
+            address_label = line[loc+1:eol]
+            if line_type == "address load by symbol":
+                if address_label not in symbol_table:
+                    symbol_table[address_label] = ram
+                    ram += 1
+                address = symbol_table[address_label]
+            if line_type == "address load by location": 
+                address = int(address_label)
+            if address >= 32768:
+                print "Error: address larger than 15 bits!"
+                f.close()
+                break
+            bin_address_uf = bin(address)
+            bin_address = bin_address_uf[2:]
+            extra_0s = 16 - len(bin_address)
+            readable_address = '0' * extra_0s + bin_address
+            h.write(readable_address + '\n')
+            continue
+            loc = len(line)-1
+
+        if line_type == "jump command":
+            j = j_code(line)
+
+        if line_type == "computation": # Write the instruction to h
+            d = d_code(line)
+
+        ac = c_code(line)
+
+        newline = i + ac + d + j + '\n' 
         h.write(newline)
 
     h.close()
