@@ -1,4 +1,5 @@
 from sys import argv
+import re
  
 
 class HackNumber(object):
@@ -107,37 +108,43 @@ def write_to_asm(lines_to_write, asm):
         asm.write(line_to_write + '\n')
     return
 
-def get_line_type(line):
-    return 'operation' # TODO: create entire function returning type
+def get_segment_type(line):
+    val_index = re.search('\d', line)
+    if val_index is None:
+        segment_type = 'operation'
+    else:
+        if 'pop' in line:
+            seg_start = 3
+        elif 'push' in line:
+            seg_start = 4
+        segment_type = line[seg_start:val_index.start()]
+    return segment_type
 
 def bitwise_operate(operation):
     if operation == 'an':
-        value = stack[len(stack)-1].bitand(stack[len(stack)-2])
+        value = stack[-1].bitand(stack[-2])
     elif operation == 'or':
-        value = stack[len(stack)-1].bitor(stack[len(stack)-2])
+        value = stack[-1].bitor(stack[-2])
     elif operation == 'no':
-        value = stack[len(stack)-1].bitnot()
+        value = stack[-1].bitnot()
     return value 
 
 def compare_operate(operation):
     if operation == 'eq':
-        value = -1 * (stack[len(stack)-2].dec_value == 
-                      stack[len(stack)-1].dec_value)
+        value = -1 * (stack[-2].dec_value == stack[-1].dec_value)
     elif operation == 'gt':
-        value = -1 * (stack[len(stack)-2].dec_value > 
-                      stack[len(stack)-1].dec_value)
+        value = -1 * (stack[-2].dec_value > stack[-1].dec_value)
     elif operation == 'lt':    
-        value = -1 * (stack[len(stack)-2].dec_value < 
-                      stack[len(stack)-1].dec_value)
+        value = -1 * (stack[-2].dec_value < stack[-1].dec_value)
     return value
 
 def arithmetic_operate(operation):
     if operation == 'ad':
-        value = stack[len(stack)-2].dec_value + stack[len(stack)-1].dec_value
+        value = stack[-2].dec_value + stack[-1].dec_value
     if operation == 'su':
-        value = stack[len(stack)-2].dec_value - stack[len(stack)-1].dec_value
+        value = stack[-2].dec_value - stack[-1].dec_value
     if operation == 'ne':
-        value = -1 * stack[len(stack)-1].dec_value
+        value = -1 * stack[-1].dec_value
     return value
 
 def operate(operation):
@@ -151,6 +158,7 @@ def operate(operation):
 
 def pass_through(vm_file):
     global stack
+    RAM_loc = None
     new_file_name = vm_file.replace('vm', 'asm')
     asm = open(new_file_name, 'w') # asm is new '.asm' file.
     f = open(vm_file, 'r')
@@ -166,69 +174,133 @@ def pass_through(vm_file):
         if line == '':
             continue
         eol = find_eol(line)
+        segment_type = get_segment_type(line)
 
-        line_type = get_line_type(line)
-
-        if line_type == 'operation':
-
-            
-            if line[0:4] == 'push':
-                stack.append(HackNumber(int(line[12:eol+1])))
-                lines_to_write = ['@%d' % stack[len(stack) - 1].dec_value,
-                                  'D=A',
-                                  '@SP',
-                                  'A=M',
-                                  'M=D',
-                                  '@SP',
-                                  'M=M+1']
-
-            else:
-                operation = line[0:2]
-
-                if operation in bi_command_list:
-                    lines_to_write = ['@SP',
-                                      'M=M-1',
+        if segment_type is not 'operation':
+            RAM_loc = segments[segment_type]
+            val_index = re.search('\d', line)
+            val = int(line[val_index.start():eol+1])
+            if segment_type == 'temp': 
+                RAM_loc = 5 + val
+            if segment_type == 'pointer':
+                RAM_loc = 3 + val
+            if 'pop' in line:
+                transfer = stack.pop()
+                eval(segment_type)[val] = transfer
+                if segment_type != ('temp' or 'pointer'):
+                    lines_to_write = ['@%d' % val,
+                                      'D=A',
+                                      '@%s' % RAM_loc,
+                                      'A=M',
+                                      'D=D+A', # Where we want to push
+                                      '@5', # Temp location
+                                      'M=D', # Temp now holds dest location
+                                      '@SP',
                                       'M=M-1',
                                       'A=M',
                                       'D=M',
-                                      '@SP',
-                                      'M=M+1',
-                                      'A=M']
-                    value = operate(operation)
-                    if operation in ('eq', 'gt', 'lt'):
-                        lines_to_write.append('D=%d' % value)
-                    else:
-                        lines_to_write.append('D=D%sM'
-                                              % bi_command_list[operation])
-                    lines_to_write.extend(('@SP',
-                                           'M=M-1',
-                                           'A=M',
-                                           'M=D',
-                                           '@SP',
-                                           'M=M+1'))
-                    stack.pop()
-                    stack.pop()
-                    stack.append(HackNumber(value))
-
-                if operation in un_command_list:
+                                      '@5',
+                                      'A=M',
+                                      'M=D']
+                else:
                     lines_to_write = ['@SP',
                                       'M=M-1',
                                       'A=M',
-                                      'M=%sM' % un_command_list[operation],
+                                      'D=M',
+                                      '@%s' % RAM_loc,
+                                      'M=D']
+
+
+            if 'push' in line:
+                if segment_type == 'constant':
+                    stack.append(HackNumber(val)) # constants
+                    lines_to_write = ['@%d' % stack[-1].dec_value, # constants
+                                      'D=A',
+                                      '@SP',
+                                      'A=M',
+                                      'M=D',
                                       '@SP',
                                       'M=M+1']
-                    value = operate(operation)
-                    stack.pop()
-                    stack.append(HackNumber(value))
-        
+                else:
+                    transfer = eval(segment_type)[val]
+                    stack.append(transfer)
+                    if segment_type != ('temp' or 'pointer'):
+                        lines_to_write = ['@%d' % val,
+                                          'D=A',
+                                          '@%s' % RAM_loc,
+                                          'D=D+A',
+                                          'A=D', # Where we want to get value
+                                          'D=M', # D is now number to push
+                                          '@SP',
+                                          'M=M-1',
+                                          'A=M',
+                                          'M=D']
+                    else:
+                        lines_to_write = ['@%s' % RAM_loc,
+                                          'D=M',
+                                          '@SP',
+                                          'M=M-1',
+                                          'A=M',
+                                          'M=D']
+
+        else:
+            operation = line[0:2]
+
+            if operation in bi_command_list:
+                lines_to_write = ['@SP',
+                                  'M=M-1',
+                                  'M=M-1',
+                                  'A=M',
+                                  'D=M',
+                                  '@SP',
+                                  'M=M+1',
+                                  'A=M']
+                value = operate(operation)
+                if operation in ('eq', 'gt', 'lt'):
+                    lines_to_write.append('D=%d' % value)
+                else:
+                    lines_to_write.append('D=D%sM'
+                                          % bi_command_list[operation])
+                lines_to_write.extend(('@SP',
+                                       'M=M-1',
+                                       'A=M',
+                                       'M=D',
+                                       '@SP',
+                                       'M=M+1'))
+                stack.pop()
+                stack.pop()
+                stack.append(HackNumber(value))
+
+            if operation in un_command_list:
+                lines_to_write = ['@SP',
+                                  'M=M-1',
+                                  'A=M',
+                                  'M=%sM' % un_command_list[operation],
+                                  '@SP',
+                                  'M=M+1']
+                value = operate(operation)
+                stack.pop()
+                stack.append(HackNumber(value))
+    
         write_to_asm(lines_to_write, asm)
     f.close()
     asm.close()
 
+#MAIN
+stack = []
+local = {}
+argument = {}
+this = {}
+that = {}
+static = {}
+temp = [0,0,0,0,0,0,0]
+pointer = [0,0,0]
+
+segments = {'argument': 'ARG', 'local': 'LCL', 'this': 'THIS', 'that': 'THAT',
+            'constant': 'SP', 'temp': 5} 
 
 if __name__ == '__main__':
     script, vm_file = argv
 
-    stack = []
     pass_through(vm_file)
 
