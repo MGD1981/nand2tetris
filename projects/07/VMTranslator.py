@@ -159,6 +159,8 @@ def operate(operation):
 def pass_through(vm_file):
     global stack
     RAM_loc = None
+    base_file_index = vm_file.rfind('/') + 1
+    base_file_name = str(vm_file[base_file_index:].replace('.vm', ''))
     new_file_name = vm_file.replace('vm', 'asm')
     asm = open(new_file_name, 'w') # asm is new '.asm' file.
     f = open(vm_file, 'r')
@@ -187,7 +189,16 @@ def pass_through(vm_file):
             if 'pop' in line:
                 transfer = stack.pop()
                 eval(segment_type)[val] = transfer
-                if segment_type != ('temp' or 'pointer'):
+
+                if segment_type == 'static':
+                    lines_to_write = ['@SP',
+                                      'M=M-1',
+                                      'A=M',
+                                      'D=M',
+                                      '@%s.%d' % (base_file_name, val),
+                                      'M=D']
+
+                elif segment_type != 'temp' and segment_type != 'pointer':
                     lines_to_write = ['@%d' % val,
                                       'D=A',
                                       '@%s' % RAM_loc,
@@ -221,10 +232,21 @@ def pass_through(vm_file):
                                       'M=D',
                                       '@SP',
                                       'M=M+1']
+
+                elif segment_type == 'static':
+                    stack.append(transfer)
+                    lines_to_write = ['@%s.%d' % (base_file_name, val),
+                                      'D=M',
+                                      '@SP',
+                                      'A=M',
+                                      'M=D',
+                                      '@SP',
+                                      'M=M+1']
+
                 else:
                     transfer = eval(segment_type)[val]
                     stack.append(transfer)
-                    if segment_type != ('temp' or 'pointer'):
+                    if segment_type != 'temp' and segment_type != 'pointer':
                         lines_to_write = ['@%d' % val,
                                           'D=A',
                                           '@%s' % RAM_loc,
@@ -236,6 +258,7 @@ def pass_through(vm_file):
                                           'M=D',
                                           '@SP',
                                           'M=M+1']
+
                     else:
                         lines_to_write = ['@%s' % RAM_loc,
                                           'D=M',
@@ -295,11 +318,11 @@ this = {}
 that = {}
 static = {}
 temp = [0,0,0,0,0,0,0]
-pointer = [0,0,0]
+pointer = [0,0]
 
 
 segments = {'argument': 'ARG', 'local': 'LCL', 'this': 'THIS', 'that': 'THAT',
-            'constant': 'SP', 'temp': 5, 'pointer':3} 
+            'constant': 'SP', 'temp': 5, 'pointer':3, 'static':16} 
 
 if __name__ == '__main__':
     script, vm_file = argv
