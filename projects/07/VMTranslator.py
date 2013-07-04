@@ -228,21 +228,22 @@ def pass_through(vm_file):
                         lines_to_write = ['@%d' % val,
                                           'D=A',
                                           '@%s' % RAM_loc,
-                                          'D=D+A',
+                                          'D=D+M',
                                           'A=D', # Where we want to get value
                                           'D=M', # D is now number to push
                                           '@SP',
-                                          'M=M-1',
                                           'A=M',
-                                          'M=D']
+                                          'M=D',
+                                          '@SP',
+                                          'M=M+1']
                     else:
                         lines_to_write = ['@%s' % RAM_loc,
                                           'D=M',
                                           '@SP',
-                                          'M=M-1',
                                           'A=M',
-                                          'M=D']
-
+                                          'M=D',
+                                          '@SP',
+                                          'M=M+1']
         else:
             operation = line[0:2]
 
@@ -296,8 +297,9 @@ static = {}
 temp = [0,0,0,0,0,0,0]
 pointer = [0,0,0]
 
+
 segments = {'argument': 'ARG', 'local': 'LCL', 'this': 'THIS', 'that': 'THAT',
-            'constant': 'SP', 'temp': 5} 
+            'constant': 'SP', 'temp': 5, 'pointer':3} 
 
 if __name__ == '__main__':
     script, vm_file = argv
