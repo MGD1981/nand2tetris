@@ -109,7 +109,9 @@ def write_to_asm(lines_to_write, asm):
 
 def get_segment_type(line):
     val_index = re.search('\d', line)
-    if val_index is None:
+    if 'label' in line or 'goto' in line:
+        segment_type = 'program flow'
+    elif val_index is None:
         segment_type = 'operation'
     else:
         if 'pop' in line:
@@ -228,7 +230,15 @@ def pass_through(vm_file):
                     '@SP',
                     'M=M+1']
     
-
+    def write_program_flow(line, eol):
+        if 'label' in line:
+            return ['(' + line[5:eol] + ')']
+        if 'goto' in line:
+            return ['(' + line[4:eol] + ')',
+                    '0;JMP']
+        if 'if-goto' in line:
+            return ['(' + line[7:eol] + ')',
+                    '0;JNE']
 
     def write_operation(operation):
 
@@ -289,7 +299,7 @@ def pass_through(vm_file):
     f = open(vm_file, 'r')
 
     for line in f:
-    
+
         lines_to_write = [] # Initizalize line to write to new .asm file.
         line = cleanup(line)
         eol = find_eol(line)
@@ -300,6 +310,9 @@ def pass_through(vm_file):
         if segment_type == 'operation':
             operation = line[0:2]
             lines_to_write = write_operation(operation)
+
+        elif segment_type == 'program flow':
+            lines_to_write = write_program_flow(line, eol)
 
         else:
             RAM_loc = segments[segment_type]
@@ -322,9 +335,10 @@ def pass_through(vm_file):
     asm.close()
 
 #MAIN
+init = HackNumber(0)
 stack = []
 local = {}
-argument = {}
+argument = {0:init, 1:init, 2:init}
 this = {}
 that = {}
 static = {}
