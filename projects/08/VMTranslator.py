@@ -125,11 +125,7 @@ def pass_through(vm_file):
                               '@SP',
                               'M=M+1']
         elif operation in comp_command_list: 
-            lines_to_write = ['(VMTRUE%s)' % vm_line,
-                              'D=-1',
-                              '@VMLINE%s' % vm_line,
-                              '0;JMP',
-                              '@SP',
+            lines_to_write =  ['@SP',
                               'M=M-1',
                               'M=M-1',
                               'A=M',
@@ -141,7 +137,17 @@ def pass_through(vm_file):
                               '@VMTRUE%s' % vm_line,
                               'D;J%s' % comp_command_list[operation],
                               'D=0',
-                              '(VMLINE%s)' % vm_line]
+                              '@VMLINE%s' % vm_line,
+                              '0;JMP',
+                              '(VMTRUE%s)' % vm_line,
+                              'D=-1',
+                              '(VMLINE%s)' % vm_line, # D is now result
+                              '@SP',
+                              'M=M-1',
+                              'A=M',
+                              'M=D',
+                              '@SP',
+                              'M=M+1']
         else:
             lines_to_write = ['@SP',
                               'M=M-1',
