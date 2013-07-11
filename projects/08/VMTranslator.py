@@ -180,6 +180,7 @@ def pass_through(vm_file):
     vm_line = 0
 
     for raw_line in f:
+
         lines_to_write = [] # Initizalize line to write to new .asm file.
         line = cleanup(raw_line)
         if line == '':
