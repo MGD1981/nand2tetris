@@ -1,5 +1,6 @@
 from sys import argv
 import re
+import pdb
 
 
 
@@ -20,8 +21,8 @@ def write_to_asm(lines_to_write, asm):
 
 def get_segment_type(line):
     val_index = re.search('\d', line)
-    if 'function' in line or 'return' in line:
-        segment_type = 'function_command'
+    if 'function' in line or 'call' in line or 'return' in line:
+        segment_type = 'function command'
     elif 'label' in line or 'goto' in line:
         segment_type = 'program flow'
     elif val_index is None:
@@ -37,7 +38,85 @@ def get_segment_type(line):
 def pass_through(vm_file):
 
     def write_function_command(line):
-        pass    
+        if line[:8] == 'function':
+            arguments = int(line[-1])
+            lines_to_write = ['(%s)' % line[8:-1]]
+            for argument in range(1, arguments + 1):
+                lines_to_write.extend(['@SP',
+                                       'A=M',
+                                       'M=0',
+                                       '@SP',
+                                       'M=M+1'])
+
+            return lines_to_write
+
+        elif line[:4] == 'call':
+            arguments = int(line[-1])
+            lines_to_write = ['@RET%s' % vm_line,
+                              'D=A',
+                              '@SP',
+                              'A=M',
+                              'M=D',
+                              '@SP',
+                              'M=M+1']
+            for function_stack in ['LCL', 'ARG', 'THIS', 'THAT']:
+                lines_to_write.extend(['@%s' % function_stack,
+                                       'D=M',
+                                       '@SP',
+                                       'A=M',
+                                       'M=D',
+                                       '@SP',
+                                       'M=M+1'])
+            lines_to_write.extend(['@%s' % arguments,
+                                   'D=A',
+                                   '@5',
+                                   'D=D+A',
+                                   '@SP',
+                                   'D=M-D',
+                                   '@ARG',
+                                   'M=D',
+                                   '@SP',
+                                   'D=M',
+                                   '@LCL',
+                                   'M=D',
+                                   '@%s' % line[4:-1],
+                                   '(RET%s)' % vm_line])
+            return lines_to_write
+
+        elif line == 'return': # ARG is address, *ARG is value
+            lines_to_write = ['@LCL', # Store address LCL in temp addy FRAME
+                              'D=M',
+                              '@FRAME%s' % vm_line,
+                              'M=D',
+                              '@5', # Addy RET is value of addy (FRAME - 5)
+                              'A=D-A',
+                              'D=M',
+                              '@RET%s' % vm_line,
+                              'M=D',
+                              '@SP', # Value of ARG is pop(SP)
+                              'M=M-1',
+                              'A=M',
+                              'D=M',
+                              '@ARG',
+                              'A=M',
+                              'M=D',
+                              '@ARG', # Addy SP is Addy ARG + 1
+                              'D=A+1',
+                              '@SP',
+                              'M=D']
+            n = 1
+            for function_stack in ['THAT', 'THIS', 'ARG', 'LCL']:
+                lines_to_write.extend(['@FRAME%s' % vm_line, # Addy FStk is
+                                       'D=M',                # value of addy
+                                       '@%d' % n,            # (FRAME - n)
+                                       'A=D-A',
+                                       'D=M',
+                                       '@%s' % function_stack,
+                                       'M=D'])
+                n += 1
+            lines_to_write.extend(['@RET%s' % vm_line,
+                                   '0;JMP'])
+            return lines_to_write
 
     def write_program_flow(line):
         if 'label' in line:
@@ -204,7 +283,7 @@ def pass_through(vm_file):
         elif segment_type == 'program flow':
             lines_to_write = write_program_flow(line)
 
-        elif segment_type == 'function_command':
+        elif segment_type == 'function command':
             lines_to_write = write_function_command(line)
 
         else:
