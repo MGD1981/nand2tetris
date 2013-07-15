@@ -20,7 +20,9 @@ def write_to_asm(lines_to_write, asm):
 
 def get_segment_type(line):
     val_index = re.search('\d', line)
-    if 'label' in line or 'goto' in line:
+    if 'function' in line or 'return' in line:
+        segment_type = 'function_command'
+    elif 'label' in line or 'goto' in line:
         segment_type = 'program flow'
     elif val_index is None:
         segment_type = 'operation'
@@ -33,6 +35,23 @@ def get_segment_type(line):
     return segment_type
 
 def pass_through(vm_file):
+
+    def write_function_command(line):
+        pass    
+
+    def write_program_flow(line):
+        if 'label' in line:
+            return ['(%s)' % line[5:]]
+        elif 'if-' in line:
+            return ['@SP',
+                    'M=M-1',
+                    'A=M',
+                    'D=M',
+                    '@%s' % line[7:],
+                    'D;JGT']
+        else:
+            return ['@%s' % line[4:],
+                    '0, JMP']
 
     def write_pop(segment_type, val, RAM_loc):
         if segment_type == 'static':
@@ -104,16 +123,6 @@ def pass_through(vm_file):
                     '@SP',
                     'M=M+1']
     
-    def write_program_flow(line, eol):
-        if 'label' in line:
-            return ['(' + line[5:eol] + ')']
-        if 'goto' in line:
-            return ['(' + line[4:eol] + ')',
-                    '0;JMP']
-        if 'if-goto' in line:
-            return ['(' + line[7:eol] + ')',
-                    '0;JNE']
-
     def write_operation(operation):
         bi_command_list = {'ad':'+', 'su':'-', 'an':'&', 'or':'|'}
         un_command_list = {'ne':'-', 'no':'!'}
@@ -193,7 +202,10 @@ def pass_through(vm_file):
             lines_to_write = write_operation(operation)
 
         elif segment_type == 'program flow':
-            lines_to_write = write_program_flow(line, eol)
+            lines_to_write = write_program_flow(line)
+
+        elif segment_type == 'function_command':
+            lines_to_write = write_function_command(line)
 
         else:
             RAM_loc = segments[segment_type]
