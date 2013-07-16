@@ -101,7 +101,7 @@ def pass_through(vm_file):
                               'A=M',
                               'M=D',
                               '@ARG', # Addy SP is Addy ARG + 1
-                              'D=A+1',
+                              'D=M+1',
                               '@SP',
                               'M=D']
             n = 1
@@ -153,13 +153,15 @@ def pass_through(vm_file):
                     '@%s' % RAM_loc,
                     'A=M',
                     'D=D+A', # Where we want to push
-                    '@5', # Temp location
+                    '@SP', # Temp location
+                    'A=M',
                     'M=D', # Temp now holds dest location
                     '@SP',
                     'M=M-1',
                     'A=M',
                     'D=M',
-                    '@5',
+                    '@SP',
+                    'A=M+1',
                     'A=M',
                     'M=D']
 
