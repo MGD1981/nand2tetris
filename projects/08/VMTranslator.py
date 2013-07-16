@@ -115,6 +115,7 @@ def pass_through(vm_file):
                                        'M=D'])
                 n += 1
             lines_to_write.extend(['@RET%s' % vm_line,
+                                   'A=M',
                                    '0;JMP'])
             return lines_to_write
 
