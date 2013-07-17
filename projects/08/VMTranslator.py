@@ -30,7 +30,7 @@ def get_segment_type(line):
         segment_type = line[seg_start:val_index.start()]
     return segment_type
 
-def pass_through(raw_line):
+def pass_through(raw_line, vm_file=None):
 
     def write_function_command(line):
         global unique_id
@@ -49,8 +49,7 @@ def pass_through(raw_line):
         elif line[:4] == 'call':
             arguments = int(line[-1])
             lines_to_write = ['@RET%s' % unique_id, # Push return-address
-                              #'A=M', # Correct?  Omit?
-                              'D=A', # Or D=M?
+                              'D=A', 
                               '@SP',
                               'A=M',
                               'M=D',
@@ -129,10 +128,9 @@ def pass_through(raw_line):
                     'A=M',
                     'D=M',
                     '@%s' % line[7:],
-                    'D;JGT']
+                    'D;JNE']
         else:
             return ['@%s' % line[4:],
-                    'A=M',
                     '0;JMP']
 
     def write_pop(segment_type, val, RAM_loc):
@@ -141,7 +139,7 @@ def pass_through(raw_line):
                     'M=M-1',
                     'A=M',
                     'D=M',
-                    '@%s.%d' % (base_file_name, val),
+                    '@%s.%d' % (vm_file, val),
                     'M=D']
         elif segment_type == 'temp' or segment_type == 'pointer':
             return ['@SP',
@@ -179,7 +177,7 @@ def pass_through(raw_line):
                     '@SP',
                     'M=M+1']
         elif segment_type == 'static':
-            return ['@%s.%d' % (base_file_name, val),
+            return ['@%s.%d' % (vm_file, val),
                     'D=M',
                     '@SP',
                     'A=M',
@@ -319,13 +317,15 @@ def get_asm_filename(vm_directory):
     return vm_directory + '/' + vm_directory[slash_index + 1:] + '.asm'
 
 def process_files(vm_directory):
-    lines_to_write = write_init()
+    lines_to_write = []
+    if 'Sys.vm' in os.listdir('%s' % vm_directory):
+        lines_to_write = write_init()
     asm_filename = open(get_asm_filename(vm_directory), 'w')
     for filename in os.listdir('%s' % vm_directory):
         if filename[-3:] == '.vm':
             vm_file = open(vm_directory + '/' + filename, 'r') 
             for raw_line in vm_file:
-                lines_to_write.extend(pass_through(raw_line))
+                lines_to_write.extend(pass_through(raw_line, filename[:-3]))
     write_to_asm(lines_to_write, asm_filename)
     vm_file.close()
     asm_filename.close()
