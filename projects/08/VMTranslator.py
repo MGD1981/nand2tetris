@@ -1,7 +1,7 @@
 from sys import argv
+import os
 import re
 import pdb
-
 
 
 def cleanup(raw_line):
@@ -13,11 +13,6 @@ def cleanup(raw_line):
         line = (line[:(('%r' % line).index('\\') - 1)] + 
                 line[('%r' % line).index('\\'):]) 
     return line
-
-def write_to_asm(lines_to_write, asm):
-    for line_to_write in lines_to_write:
-        asm.write(line_to_write + '\n')
-    return
 
 def get_segment_type(line):
     val_index = re.search('\d', line)
@@ -35,9 +30,10 @@ def get_segment_type(line):
         segment_type = line[seg_start:val_index.start()]
     return segment_type
 
-def pass_through(vm_file):
+def pass_through(raw_line):
 
     def write_function_command(line):
+        global unique_id
         if line[:8] == 'function':
             arguments = int(line[-1])
             lines_to_write = ['(%s)' % line[8:-1]]
@@ -52,22 +48,23 @@ def pass_through(vm_file):
 
         elif line[:4] == 'call':
             arguments = int(line[-1])
-            lines_to_write = ['@RET%s' % vm_line,
-                              'D=A',
+            lines_to_write = ['@RET%s' % unique_id, # Push return-address
+                              #'A=M', # Correct?  Omit?
+                              'D=A', # Or D=M?
                               '@SP',
                               'A=M',
                               'M=D',
                               '@SP',
                               'M=M+1']
             for function_stack in ['LCL', 'ARG', 'THIS', 'THAT']:
-                lines_to_write.extend(['@%s' % function_stack,
-                                       'D=M',
+                lines_to_write.extend(['@%s' % function_stack, # Push LCL, ARG,
+                                       'D=M',                  # THIS, THAT
                                        '@SP',
                                        'A=M',
                                        'M=D',
                                        '@SP',
                                        'M=M+1'])
-            lines_to_write.extend(['@%s' % arguments,
+            lines_to_write.extend(['@%s' % arguments, # ARG = SP-n-5
                                    'D=A',
                                    '@5',
                                    'D=D+A',
@@ -75,23 +72,26 @@ def pass_through(vm_file):
                                    'D=M-D',
                                    '@ARG',
                                    'M=D',
-                                   '@SP',
+                                   '@SP', # LCL = SP
                                    'D=M',
                                    '@LCL',
                                    'M=D',
-                                   '@%s' % line[4:-1],
-                                   '(RET%s)' % vm_line])
+                                   '@%s' % line[4:-1], # goto F
+                                   #'A=M', # Puts in infinite loop!  WHY?!
+                                   '0;JMP',
+                                   '(RET%s)' % unique_id]) # (return-address)
+            unique_id += 1
             return lines_to_write
 
         elif line == 'return': # ARG is address, *ARG is value
             lines_to_write = ['@LCL', # Store address LCL in temp addy FRAME
                               'D=M',
-                              '@FRAME%s' % vm_line,
+                              '@FRAME%s' % unique_id,
                               'M=D',
                               '@5', # Addy RET is value of addy (FRAME - 5)
                               'A=D-A',
                               'D=M',
-                              '@RET%s' % vm_line,
+                              '@RET%s' % unique_id,
                               'M=D',
                               '@SP', # Value of ARG is pop(SP)
                               'M=M-1',
@@ -106,7 +106,7 @@ def pass_through(vm_file):
                               'M=D']
             n = 1
             for function_stack in ['THAT', 'THIS', 'ARG', 'LCL']:
-                lines_to_write.extend(['@FRAME%s' % vm_line, # Addy FStk is
+                lines_to_write.extend(['@FRAME%s' % unique_id, # Addy FStk is
                                        'D=M',                # value of addy
                                        '@%d' % n,            # (FRAME - n)
                                        'A=D-A',
@@ -114,9 +114,10 @@ def pass_through(vm_file):
                                        '@%s' % function_stack,
                                        'M=D'])
                 n += 1
-            lines_to_write.extend(['@RET%s' % vm_line,
+            lines_to_write.extend(['@RET%s' % unique_id,
                                    'A=M',
                                    '0;JMP'])
+            unique_id += 1
             return lines_to_write
 
     def write_program_flow(line):
@@ -131,7 +132,8 @@ def pass_through(vm_file):
                     'D;JGT']
         else:
             return ['@%s' % line[4:],
-                    '0, JMP']
+                    'A=M',
+                    '0;JMP']
 
     def write_pop(segment_type, val, RAM_loc):
         if segment_type == 'static':
@@ -206,6 +208,7 @@ def pass_through(vm_file):
                     'M=M+1']
     
     def write_operation(operation):
+        global unique_id
         bi_command_list = {'ad':'+', 'su':'-', 'an':'&', 'or':'|'}
         un_command_list = {'ne':'-', 'no':'!'}
         comp_command_list = {'eq':'EQ', 'gt':'GT', 'lt':'LT'} 
@@ -235,20 +238,21 @@ def pass_through(vm_file):
                               'M=M+1',
                               'A=M', # A = where second operand lives
                               'D=D-M', # D = difference btw operands
-                              '@VMTRUE%s' % vm_line,
+                              '@VMTRUE%s' % unique_id,
                               'D;J%s' % comp_command_list[operation],
                               'D=0',
-                              '@VMLINE%s' % vm_line,
+                              '@VMLINE%s' % unique_id,
                               '0;JMP',
-                              '(VMTRUE%s)' % vm_line,
+                              '(VMTRUE%s)' % unique_id,
                               'D=-1',
-                              '(VMLINE%s)' % vm_line, # D is now result
+                              '(VMLINE%s)' % unique_id, # D is now result
                               '@SP',
                               'M=M-1',
                               'A=M',
                               'M=D',
                               '@SP',
                               'M=M+1']
+            unique_id += 1
         else:
             lines_to_write = ['@SP',
                               'M=M-1',
@@ -263,52 +267,77 @@ def pass_through(vm_file):
                 'that': 'THAT', 'constant': 'SP', 'temp': 5, 'pointer':3, 
                 'static':16}
     RAM_loc = None
-    base_file_index = vm_file.rfind('/') + 1
-    base_file_name = str(vm_file[base_file_index:].replace('.vm', ''))
-    new_file_name = vm_file.replace('vm', 'asm')
-    asm = open(new_file_name, 'w') # asm is new '.asm' file.
-    f = open(vm_file, 'r')
-    vm_line = 0
+    lines_to_write = [] # Initizalize line to write to new .asm file.
+    line = cleanup(raw_line)
+    if line == '':
+        return ''
+    segment_type = get_segment_type(line)
 
-    for raw_line in f:
+    if segment_type == 'operation':
+        operation = line[0:2]
+        lines_to_write = write_operation(operation)
 
-        lines_to_write = [] # Initizalize line to write to new .asm file.
-        line = cleanup(raw_line)
-        if line == '':
+    elif segment_type == 'program flow':
+        lines_to_write = write_program_flow(line)
+
+    elif segment_type == 'function command':
+        lines_to_write = write_function_command(line)
+
+    else:
+        RAM_loc = segments[segment_type]
+        val_index = re.search('\d', line)
+        val = int(line[val_index.start():])
+        if segment_type == 'temp': 
+            RAM_loc = 5 + val
+        if segment_type == 'pointer':
+            RAM_loc = 3 + val
+        if 'pop' in line:
+            lines_to_write = write_pop(segment_type, val, RAM_loc)
+        if 'push' in line:
+            lines_to_write = write_push(segment_type, val, RAM_loc)
+
+    return lines_to_write
+
+
+def write_init():
+    lines_to_write = ['@256',
+                      'D=A',
+                      '@SP',
+                      'M=D']
+    lines_to_write.extend(pass_through('call Sys.init 0'))
+    return lines_to_write
+
+def write_to_asm(lines_to_write, asm):
+    for line_to_write in lines_to_write:
+        if line_to_write == '':
             continue
-        vm_line += 1
-        segment_type = get_segment_type(line)
+        asm.write(line_to_write + '\n')
+    return
 
-        if segment_type == 'operation':
-            operation = line[0:2]
-            lines_to_write = write_operation(operation)
+def get_asm_filename(vm_directory):
+    slash_index = vm_directory.rfind('/')
+    return vm_directory + '/' + vm_directory[slash_index + 1:] + '.asm'
 
-        elif segment_type == 'program flow':
-            lines_to_write = write_program_flow(line)
+def process_files(vm_directory):
+    lines_to_write = write_init()
+    asm_filename = open(get_asm_filename(vm_directory), 'w')
+    for filename in os.listdir('%s' % vm_directory):
+        if filename[-3:] == '.vm':
+            vm_file = open(vm_directory + '/' + filename, 'r') 
+            for raw_line in vm_file:
+                lines_to_write.extend(pass_through(raw_line))
+    write_to_asm(lines_to_write, asm_filename)
+    vm_file.close()
+    asm_filename.close()
 
-        elif segment_type == 'function command':
-            lines_to_write = write_function_command(line)
-
-        else:
-            RAM_loc = segments[segment_type]
-            val_index = re.search('\d', line)
-            val = int(line[val_index.start():])
-            if segment_type == 'temp': 
-                RAM_loc = 5 + val
-            if segment_type == 'pointer':
-                RAM_loc = 3 + val
-            if 'pop' in line:
-                lines_to_write = write_pop(segment_type, val, RAM_loc)
-            if 'push' in line:
-                lines_to_write = write_push(segment_type, val, RAM_loc)
-
-        write_to_asm(lines_to_write, asm)
-
-    f.close()
-    asm.close()
 
 if __name__ == '__main__':
-    script, vm_file = argv
+    script, vm_directory = argv
 
-    pass_through(vm_file)
+    if vm_directory[-1] == '/':
+        vm_directory = vm_directory[:-1] 
+
+    unique_id = 0
+    process_files(vm_directory) 
+    
 
