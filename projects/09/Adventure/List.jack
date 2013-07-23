@@ -1,0 +1,18 @@
+class List {
+    field int data;
+    field List next;
+
+    constructor List new(int car, List cdr) {
+        let data = car;
+        let next = cdr;
+        return this;
+    }
+
+    method void dispose() {
+        if (~(next = null)) {
+            do next.dispose();
+        }
+        do Memory.deAlloc(this);
+        return;
+    }
+}

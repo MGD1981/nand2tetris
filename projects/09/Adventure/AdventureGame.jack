@@ -1,0 +1,92 @@
+class AdventureGame {
+    field int choice;
+    field String username;
+    field List inventory;
+    field boolean game_on;
+    constructor AdventureGame new() {
+        let game_on = true;
+        let inventory = List.new(null, null);
+        let username = Keyboard.readLine("Please enter your name: ");
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method int random_simulation() {
+        var int rand_num;
+        let rand_num = Memory.peek(rand_num);
+        while ( rand_num > 9 ) {
+            let rand_num = Math.sqrt(rand_num);
+        }
+        return rand_num;
+    }
+
+    method void run() {
+        do Output.printString("Hello, ");
+        do Output.printString(username);
+        do Output.printString("!");
+        while ( game_on ) {
+            let choice = room1();
+            if ( choice = 1 ) {
+                do couch();
+            }
+            else {
+                if ( choice = 2 ) {
+                    do television();
+                }
+                else {
+                    do quit();
+                }
+            }
+        }
+        return; 
+    }
+
+    method void quit() {
+        let game_on = false;
+        return;
+    }
+
+    method int room1() {
+        do Screen.clearScreen();
+        do Output.moveCursor(0, 0);
+        do Output.println();
+        do Output.printString("You are in a room.  There is a door to the north.");
+        do Output.println();
+        do Output.printString("You see a couch and a television.");
+        do Output.println();
+        do Output.println();
+        do Output.printString("Please choose:");
+        do Output.println();
+        do Output.printString("1) Search couch.");
+        do Output.println();
+        do Output.printString("2) Turn on television.");
+        do Output.println();
+        do Output.printString("3) Quit.");
+        do Output.println();
+        let choice = Keyboard.readInt(">> ");
+        return choice;
+    }
+
+    method void couch() {
+        var int loot;
+        let loot = random_simulation();
+        let inventory = List.new(loot, inventory);
+        do Output.println();
+        do Output.println();
+        do Output.printString("You find a coin worth ");
+        do Output.printInt(loot);
+        do Output.printString(" cents!");
+        do Output.println();
+        do Keyboard.readLine("Press any key...");
+        return;
+    }
+
+    method void television() {
+        return;
+    }
+
+}
