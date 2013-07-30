@@ -1,12 +1,38 @@
 from sys import argv
 
 
+def cleanup(jack_file):
+    jacktext = []
+    ignore_on = False
+    for line in jack_file:
+        if '//' in line:
+            line = line[:line.index('//')]
+        if ignore_on == True and '*/' in line:
+            line = line[line.index('*/') + 2:]
+            ignore_on = False
+        for chari in range(len(line)):
+            if line[chari] == '/' and chari != len(line)-1:
+                if line[chari + 1] == '*':
+                    ignore_on = True
+            if line[chari] == ' ' or '\\' in ('%r'%line[chari]) or ignore_on:
+                continue
+            jacktext.append(line[chari])
+    jacktext = ''.join(jacktext)
+    print jacktext
+    return jacktext 
+
 
 def process_file(jack_file):
-    pass
+    xml_file = open((jack_file[:-5] + 'T.xml'), 'w')
+    jacktext = cleanup(open(jack_file))
+    xml_file.write(jacktext)
+    xml_file.close()
+    return
 
 def process_directory(jack_directory):
-    pass
+    for filename in os.listdir('%s' % jack_directory):
+        if filename[-5:] == '.jack':
+             process_file(filename)
 
 
 if __name__ == '__main__':
