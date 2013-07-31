@@ -1,11 +1,14 @@
 from sys import argv
+import os
 
 
 def tokenize(text):
     global lexicon
     newtext = ["<tokens>"]
     loc = 0
+    token = []
     while loc < len(text):
+        prev_token = ''.join(token)
         token = []
         if text[loc] in lexicon['symbols']:
             newtext.append("<symbol> %s </symbol>" % text[loc])
@@ -31,12 +34,17 @@ def tokenize(text):
                 if ''.join(token) in lexicon['keywords']:
                     newtext.append("<keyword> %s </keyword>" % ''.join(token))
                     token_found = True
+                if ''.join(token) in lexicon['identifiers']:
+                    newtext.append("<identifier> %s </identifier>" % 
+                                   ''.join(token))
+                    token_found = True
                 loc += 1
                 if text[loc] in lexicon['symbols'] or text[loc] == '"':
                     newtext.append("<identifier> %s </identifier>" % 
                                    ''.join(token))
+                    lexicon['identifiers'].append(''.join(token))
                     token_found = True
-    print newtext
+    newtext.append("</tokens>")
     return newtext
 
 def cleanup(jack_file):
@@ -59,17 +67,22 @@ def cleanup(jack_file):
     return jacktext 
 
 
-def process_file(jack_file):
+def process_file(jack_file, jack_directory=''):
     xml_file = open((jack_file[:-5] + 'T.xml'), 'w')
-    jacktext = cleanup(open(jack_file))
+    jacktext = cleanup(open(jack_directory + '/' + jack_file))
     xml_file.write('\n'.join(tokenize(jacktext)))
     xml_file.close()
     return
 
 def process_directory(jack_directory):
+    global lexicon
     for filename in os.listdir('%s' % jack_directory):
         if filename[-5:] == '.jack':
-             process_file(filename)
+            lexicon['identifiers'].append(filename[:-5])
+    print lexicon
+    for filename in os.listdir('%s' % jack_directory):
+        if filename[-5:] == '.jack':
+             process_file(filename, jack_directory)
 
 
 lexicon = {'keywords':['class', 'constructor', 'function', 'method', 'field', 
@@ -78,7 +91,8 @@ lexicon = {'keywords':['class', 'constructor', 'function', 'method', 'field',
                        'else', 'while', 'return'], 
            'symbols':['{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', 
                       '*', '/', '&', '|', '<', '>', '=', '~'], 
-           'numbers':['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']}
+           'numbers':['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], 
+           'identifiers':[]}
 
 
 if __name__ == '__main__':
