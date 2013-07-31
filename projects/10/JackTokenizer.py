@@ -12,7 +12,15 @@ def tokenize(text):
         if text[loc] == ' ':
             loc += 1
         elif text[loc] in lexicon['symbols']:
-            newtext.append("<symbol> %s </symbol>" % text[loc])
+            if text[loc] == '<':
+                sym = '&lt;'
+            elif text[loc] == '>':
+                sym = '&gt;'
+            elif text[loc] == '&':
+                sym = '&amp;'
+            else:
+                sym = text[loc]
+            newtext.append("<symbol> %s </symbol>" % sym)
             loc += 1
         elif text[loc] in lexicon['numbers']:
             while text[loc] in lexicon['numbers']:
@@ -65,7 +73,6 @@ def cleanup(jack_file):
             line = line[line.index('*/') + 2:]
             ignore_on = False
     jacktext = ''.join(jacktext)
-    print "Jacktext: %r" % jacktext
     return jacktext 
 
 
