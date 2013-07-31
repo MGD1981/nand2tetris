@@ -10,7 +10,9 @@ def tokenize(text):
     while loc < len(text):
         prev_token = ''.join(token)
         token = []
-        if text[loc] in lexicon['symbols']:
+        if text[loc] == ' ':
+            loc += 1
+        elif text[loc] in lexicon['symbols']:
             newtext.append("<symbol> %s </symbol>" % text[loc])
             loc += 1
         elif text[loc] in lexicon['numbers']:
@@ -31,19 +33,16 @@ def tokenize(text):
             token_found = False
             while token_found == False:
                 token.append(text[loc])
-                if ''.join(token) in lexicon['keywords']:
-                    newtext.append("<keyword> %s </keyword>" % ''.join(token))
-                    token_found = True
-                if ''.join(token) in lexicon['identifiers']:
-                    newtext.append("<identifier> %s </identifier>" % 
-                                   ''.join(token))
-                    token_found = True
                 loc += 1
-                if text[loc] in lexicon['symbols'] or text[loc] == '"':
-                    newtext.append("<identifier> %s </identifier>" % 
-                                   ''.join(token))
-                    lexicon['identifiers'].append(''.join(token))
-                    token_found = True
+                if text[loc] in lexicon['symbols'] or text[loc] in ['"', ' ']:
+                    if ''.join(token) in lexicon['keywords']:
+                        newtext.append("<keyword> %s </keyword>" % 
+                                       ''.join(token))
+                        token_found = True
+                    else: 
+                        newtext.append("<identifier> %s </identifier>" % 
+                                       ''.join(token))
+                        token_found = True
     newtext.append("</tokens>")
     return newtext
 
@@ -53,17 +52,21 @@ def cleanup(jack_file):
     for line in jack_file:
         if '//' in line:
             line = line[:line.index('//')]
-        if ignore_on == True and '*/' in line:
-            line = line[line.index('*/') + 2:]
-            ignore_on = False
         for chari in range(len(line)):
             if line[chari] == '/' and chari != len(line)-1:
                 if line[chari + 1] == '*':
                     ignore_on = True
-            if line[chari] == ' ' or '\\' in ('%r'%line[chari]) or ignore_on:
+            if '\\' in ('%r'%line[chari]):
+                jacktext.append(' ')
+                continue
+            if ignore_on:
                 continue
             jacktext.append(line[chari])
+        if ignore_on == True and '*/' in line:
+            line = line[line.index('*/') + 2:]
+            ignore_on = False
     jacktext = ''.join(jacktext)
+    print "Jacktext: %r" % jacktext
     return jacktext 
 
 
@@ -78,10 +81,6 @@ def process_directory(jack_directory):
     global lexicon
     for filename in os.listdir('%s' % jack_directory):
         if filename[-5:] == '.jack':
-            lexicon['identifiers'].append(filename[:-5])
-    print lexicon
-    for filename in os.listdir('%s' % jack_directory):
-        if filename[-5:] == '.jack':
              process_file(filename, jack_directory)
 
 
@@ -91,8 +90,7 @@ lexicon = {'keywords':['class', 'constructor', 'function', 'method', 'field',
                        'else', 'while', 'return'], 
            'symbols':['{', '}', '(', ')', '[', ']', '.', ',', ';', '+', '-', 
                       '*', '/', '&', '|', '<', '>', '=', '~'], 
-           'numbers':['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], 
-           'identifiers':[]}
+           'numbers':['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']}
 
 
 if __name__ == '__main__':
