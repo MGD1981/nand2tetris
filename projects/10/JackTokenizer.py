@@ -8,7 +8,6 @@ def tokenize(text):
     loc = 0
     token = []
     while loc < len(text):
-        prev_token = ''.join(token)
         token = []
         if text[loc] == ' ':
             loc += 1
