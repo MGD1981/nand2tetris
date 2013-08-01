@@ -153,4 +153,5 @@ D=M
 @LCL
 M=D
 @RET10
+A=M
 0;JMP

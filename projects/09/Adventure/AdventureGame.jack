@@ -2,10 +2,12 @@ class AdventureGame {
     field int choice;
     field String username;
     field List inventory;
+    field int inv_len;
     field boolean game_on;
     constructor AdventureGame new() {
         let game_on = true;
         let inventory = List.new(null, null);
+        let inv_len = 0;
         let username = Keyboard.readLine("Please enter your name: ");
         return this;
     }
@@ -17,10 +19,7 @@ class AdventureGame {
 
     method int random_simulation() {
         var int rand_num;
-        let rand_num = Memory.peek(rand_num);
-        while ( rand_num > 9 ) {
-            let rand_num = Math.sqrt(rand_num);
-        }
+        let rand_num = (0*1+1)+(0*1+2)+(0*1+3)+(0*1+4)+(0*1+5);
         return rand_num;
     }
 
@@ -28,6 +27,8 @@ class AdventureGame {
         do Output.printString("Hello, ");
         do Output.printString(username);
         do Output.printString("!");
+        do Output.println();
+        do Keyboard.readLine("Press any key...");
         while ( game_on ) {
             let choice = room1();
             if ( choice = 1 ) {
@@ -71,16 +72,30 @@ class AdventureGame {
         return choice;
     }
 
+    method void printInventory() {
+        var int i;
+        let i = 0;
+        while ( i < inv_len ) {
+            do Output.printInt(inventory[(inv_len-1)]);
+            do Output.printString(" ");
+            let i = i + 1;
+        }
+        return;
+    }
+
     method void couch() {
         var int loot;
         let loot = random_simulation();
         let inventory = List.new(loot, inventory);
+        let inv_len = inv_len + 1;
         do Output.println();
         do Output.println();
         do Output.printString("You find a coin worth ");
         do Output.printInt(loot);
         do Output.printString(" cents!");
         do Output.println();
+        do Output.println();
+        do printInventory();
         do Keyboard.readLine("Press any key...");
         return;
     }
