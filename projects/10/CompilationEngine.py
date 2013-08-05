@@ -143,9 +143,8 @@ def process_tokens(text):
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
         if getType(line) != 'symbol' and getName(line) != ')':
-            lines_to_add.extend(compileParameterList(line, depth))
-        assert getType(line) == 'symbol' and getName(line) == ')'
-        lines_to_add.append('  '*(depth+1) + line)
+            lines_to_add.extend(compileParameterList(line, depth+1))
+        lines_to_add.append('  '*(depth+1) + "<symbol> ) </symbol>\n")
         line = text.next()
         assert getType(line) == 'symbol' and getName(line) == '{'
         lines_to_add.extend(['  '*(depth+1) + "<subroutineBody>\n",
@@ -162,11 +161,25 @@ def process_tokens(text):
                              '  '*depth + "</subroutineDec>\n"])
         return lines_to_add
         
-
-    def compileParameterList():
+    def compileParameterList(line, depth):
         """Compiles a (possibly empty) parameter list, not including the 
            enclosing \"()\"."""
-        pass
+        run_through_once = False
+        lines_to_add = ['  '*depth + "<parameterList>\n"]
+        while run_through_once == False or (getType(line) == 'symbol' and
+                                            getName(line) == ','):
+            if getType(line) == 'symbol' and getName(line) == ',':
+                lines_to_add.append('  '*(depth) + line)
+                line = text.next()
+            assert getType(line) in ['keyword', 'identifier']
+            lines_to_add.append('  '*(depth) + line)
+            line = text.next()
+            assert getType(line) == 'identifier'
+            lines_to_add.append('  '*(depth) + line)
+            line = text.next()
+            run_through_once = True
+        lines_to_add.append('  '*depth + "</parameterList>\n")
+        return lines_to_add
 
     def compileVarDec():
         """Compiles a var declaration."""
