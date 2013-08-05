@@ -2,9 +2,7 @@ from sys import argv
 import os
 
 
-def process_tokens(text):
-    newtext = []
-    stack = []
+def _ignore():
 
     def get_element(line):
         return line[line.find('<')+1:line.find('>')]
@@ -73,10 +71,142 @@ def process_tokens(text):
     return ''.join(newtext)
 
 
+def process_tokens(text):
+    newtext = []
+
+    def getType(line):
+        """Returns the token type of the xml line."""
+        return line[line.find('<')+1:line.find('>')]
+
+    def getName(line):
+        """Returns the word/symbol of the xml token."""
+        return line[line.find('>')+2:line.find('<',2)-1]
+
+    def compileClass(line, depth):
+        """Compiles a complete class."""
+        lines_to_add = [(('  '*depth) + "<class>\n"), ('  '*(depth+1) + line)]
+        line = text.next()
+        assert getType(line) in ['identifier', 'keyword']
+        lines_to_add.append('  '*(depth+1) + line)
+        line = text.next()
+        assert getType(line) == 'symbol' and getName(line) == '{'
+        lines_to_add.append('  '*(depth+1) + line)
+        line = text.next()
+        assert (getType(line) == 'keyword' and getName(line) in ['field',
+            'static']) or (getType(line) == 'symbol' and getName(line) == '}')
+        while getName(line) in ['field', 'static']:
+            lines_to_add.extend(compileClassVarDec(line, depth+1))
+            line = text.next()
+        if getType(line) == 'keyword' and getName(line) in ['constructor', 
+                            'function', 'method']:
+            lines_to_add.extend(compileSubroutine(line, depth+1))
+            line = text.next()
+        assert getType(line) == 'symbol' and getName(line) == '}'
+        lines_to_add.extend(['  '*(depth+1) + line,
+                             '  '*(depth) + "</class>\n"])
+        return lines_to_add
+
+    def compileClassVarDec(line, depth):
+        """Compiles a static declaration or a field declaration."""
+        lines_to_add = ['  '*depth + "<classVarDec>\n",
+                        '  '*(depth+1) + line]
+        line = text.next()
+        assert getType(line) in ['keyword', 'identifier']
+        lines_to_add.append('  '*(depth+1) + line)
+        line = text.next()
+        assert getType(line) in ['keyword', 'identifier']
+        lines_to_add.append('  '*(depth+1) + line)
+        line = text.next()
+        while getType(line) == 'symbol' and getName(line) == ',':
+            lines_to_add.append('  '*(depth+1) + line)
+            line = text.next()
+            assert getType(line) in ['keyword', 'identifier']
+            lines_to_add.append('  '*(depth+1) + line)
+            line = text.next()
+        assert getType(line) == 'symbol' and getName(line) == ';'
+        lines_to_add.extend(['  '*(depth+1) + line,
+                             '  '*depth + "</classVarDec>\n"])
+        return lines_to_add
+        
+
+    def compileSubroutine(line, depth):
+        """Compiles a complete method, function, or constructor."""
+        pass
+
+    def compileParameterList():
+        """Compiles a (possibly empty) parameter list, not including the 
+           enclosing \"()\"."""
+        pass
+
+    def compileVarDec():
+        """Compiles a var declaration."""
+        pass
+
+    def compileStatements():
+        """
+        Compiles a sequence of statements, not including the enclosing \"{}\".
+        """
+        pass
+
+    def compileDo():
+        """Compiles a do statement."""
+        pass
+
+    def compileLet():
+        """Compiles a let statement."""
+        pass
+
+    def compileWhile():
+        """Compiles a while statement."""
+        pass
+
+    def compileReturn():
+        """Compiles a return statement."""
+        pass
+
+    def compileIf():
+        """Compiles an if statement, possibly with a trailing else clause."""
+        pass
+
+    def compileExpression():
+        """Compiles an expression."""
+        pass
+
+    def compileTerm():
+        """
+        Compiles a term.  This routine is faced with a slight difficulty when
+        trying to decide between some of the alternative parsing rules.
+        Specifically, if the current token is an identifier, the routine must
+        distinguish between a variable, an array entry, and a subroutine call.
+        A single look-ahead token, which may be one of \"[\", \"(\", or \".\" 
+        suffices to distinguish between the three possibilities.  Any other 
+        token is not part of this term and should not be advanced over.
+        """
+        pass
+
+    def compileExpressionList():
+        """Compiles a (possibly empty) comma-separated list of expressions."""
+        pass
+
+    depth = 0
+    for line in text:
+        if getName(line) == 'class' and getType(line) == 'keyword':
+            print "Class compile"
+            newtext.extend(compileClass(line, depth))
+    print newtext
+    return ''.join(newtext)
+
+
 def process_file(xml_file, xml_directory=''):
-    compiled_file = open((xml_file[:-5] + '.xml'), 'w')
-    tokenized_text = open(xml_directory + '/' + xml_file)
+    if xml_directory == '':
+        x = ''
+    else:
+        x = '/'
+    print "Compiling file: %s" % (xml_directory + x + xml_file)
+    compiled_file = open((xml_directory + x + xml_file[:-5] + '.xml'), 'w')
+    tokenized_text = open(xml_directory + x + xml_file)
     compiled_file.write(process_tokens(tokenized_text))
+    print "Wrote to: %s" % (xml_file[:-5] + '.xml')
     compiled_file.close()
     return
 
