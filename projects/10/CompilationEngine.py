@@ -128,10 +128,40 @@ def process_tokens(text):
                              '  '*depth + "</classVarDec>\n"])
         return lines_to_add
         
-
     def compileSubroutine(line, depth):
         """Compiles a complete method, function, or constructor."""
-        pass
+        lines_to_add = ['  '*depth + "<subroutineDec>\n",
+                        '  '*(depth+1) + line]
+        line = text.next()
+        assert getType(line) in ['keyword', 'identifier']
+        lines_to_add.append('  '*(depth+1) + line)
+        line = text.next()
+        assert getType(line) == 'identifier'
+        lines_to_add.append('  '*(depth+1) + line)
+        line = text.next()
+        assert getType(line) == 'symbol' and getName(line) == '('
+        lines_to_add.append('  '*(depth+1) + line)
+        line = text.next()
+        if getType(line) != 'symbol' and getName(line) != ')':
+            lines_to_add.extend(compileParameterList(line, depth))
+        assert getType(line) == 'symbol' and getName(line) == ')'
+        lines_to_add.append('  '*(depth+1) + line)
+        line = text.next()
+        assert getType(line) == 'symbol' and getName(line) == '{'
+        lines_to_add.extend(['  '*(depth+1) + "<subroutineBody>\n",
+                             '  '*(depth+2) + line])
+        line = text.next()
+        if getType(line) == 'keyword' and getName(line) == 'var':
+            lines_to_add.extend(compileVarDec(line, depth+2))
+        while getType(line) != 'symbol' and getName(line) != '}':
+            lines_to_add.extend(compileStatements(line, depth + 2))
+            line = text.next()
+        assert getType(line) == 'symbol' and getName(line) == '}'
+        lines_to_add.extend(['  '*(depth+2) + line,
+                             '  '*(depth+1) + "</subroutineBody>\n",
+                             '  '*depth + "</subroutineDec>\n"])
+        return lines_to_add
+        
 
     def compileParameterList():
         """Compiles a (possibly empty) parameter list, not including the 
