@@ -77,14 +77,21 @@ def cleanup(jack_file):
 
 
 def process_file(jack_file, jack_directory=''):
-    xml_file = open((jack_file[:-5] + 'T.xml'), 'w')
-    jacktext = cleanup(open(jack_directory + '/' + jack_file))
+    if jack_directory == '':
+        x = ''
+    else:
+        x = '/'
+    print "Processing file: %s" % (jack_directory + x + jack_file)
+    xml_file = open((jack_directory + x + jack_file[:-5] + 'T.xml'), 'w')
+    jacktext = cleanup(open(jack_directory + x + jack_file))
     xml_file.write('\n'.join(tokenize(jacktext)))
+    print "Wrote to: %s" % (jack_file[:-5] + 'T.xml')
     xml_file.close()
     return
 
 def process_directory(jack_directory):
     global lexicon
+    print "Processing directory: %s" % jack_directory
     for filename in os.listdir('%s' % jack_directory):
         if filename[-5:] == '.jack':
              process_file(filename, jack_directory)
