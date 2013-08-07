@@ -122,7 +122,7 @@ def process_tokens(text):
         lines_to_add.extend(['  '*(depth+1) + "<subroutineBody>\n",
                              '  '*(depth+2) + token.line])
         token = token.next()
-        if token.kind == 'keyword' and token.name == 'var':
+        while token.kind == 'keyword' and token.name == 'var':
             lines_to_add.extend(compileVarDec(token, depth+2))
             token = token.next()
         lines_to_add.extend(compileStatements(token, depth + 2))
@@ -171,7 +171,9 @@ def process_tokens(text):
             lines_to_add.append('  '*(depth+1) + token.line)
             token = token.next()
             run_through_once = True
-        lines_to_add.append('  '*depth + "</varDec>\n")
+        assert token.kind == 'symbol' and token.name == ';'
+        lines_to_add.extend(['  '*(depth+1) + token.line,
+                             '  '*depth + "</varDec>\n"])
         return lines_to_add
 
     def compileStatements(token, depth):
@@ -273,7 +275,7 @@ def process_tokens(text):
         lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
         lines_to_add.extend(compileStatements(token, depth + 1))
-        token = token.next()
+        token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
         lines_to_add.extend(['  '*(depth+1) + token.line,
                              '  '*depth + "</whileStatement>\n"])
