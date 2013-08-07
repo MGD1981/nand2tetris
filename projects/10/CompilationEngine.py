@@ -3,19 +3,34 @@ import os
 
 
 
+class TokenizedText:
+
+    def __init__(self, textfile):
+        self.tokens = []
+        for line in textfile:
+            self.tokens.append(TokenizedLine(line))
+
+class TokenizedLine:
+
+    def __init__(self, line):
+        self.kind = self.getType(line)
+        self.name = self.getName(line)
+        self.line = line
+
+    def getType(self, line):
+        """Returns the token type of the xml line."""
+        return line[line.find('<')+1:line.find('>')]
+
+    def getName(self, line):
+        """Returns the word/symbol of the xml token."""
+        return line[line.find('>')+2:line.find('<',2)-1]
+
+
 def process_tokens(text):
     newtext = []
     oplist = ['+', '-', '*', '/', '&', '|', '<', '>', '=']
     unoplist = ['-', '~']
     keyconstlist = ['true', 'false', 'null', 'this']
-
-    def getType(line):
-        """Returns the token type of the xml line."""
-        return line[line.find('<')+1:line.find('>')]
-
-    def getName(line):
-        """Returns the word/symbol of the xml token."""
-        return line[line.find('>')+2:line.find('<',2)-1]
 
     def compileClass(line, depth):
         """Compiles a complete class."""
@@ -398,11 +413,17 @@ def process_tokens(text):
         lines_to_add.extend(['  '*depth + "</expressionList>\n", line])
         return lines_to_add
 
+    print "Testing:"
+    print text.tokens[1]
+    print text.tokens[1].line
+    print text.tokens[1].kind
+    print text.tokens[1].name
+
     depth = 0
-    for line in text:
-        if getName(line) == 'class' and getType(line) == 'keyword':
+    for token in text.tokens:
+        if token.name == 'class' and token.kind == 'keyword':
             print "Class compile"
-            newtext.extend(compileClass(line, depth))
+            newtext.extend(compileClass(token, depth))
     print newtext
     return ''.join(newtext)
 
@@ -414,7 +435,7 @@ def process_file(xml_file, xml_directory=''):
         x = '/'
     print "Compiling file: %s" % (xml_directory + x + xml_file)
     compiled_file = open((xml_directory + x + xml_file[:-5] + '.xml'), 'w')
-    tokenized_text = open(xml_directory + x + xml_file)
+    tokenized_text = TokenizedText(open(xml_directory + x + xml_file))
     compiled_file.write(process_tokens(tokenized_text))
     print "Wrote to: %s" % (xml_file[:-5] + '.xml')
     compiled_file.close()
