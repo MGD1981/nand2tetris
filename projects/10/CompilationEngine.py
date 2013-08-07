@@ -267,7 +267,6 @@ def process_tokens(text):
         lines_to_add.extend(['  '*(depth+1) + line,
                              '  '*(depth+1) + "<symbol> ; </symbol>\n",
                              '  '*depth + "</returnStatement>\n"])
-        #lines_to_add.append(prev_line)
         print "Return last line: %s" % line
         return lines_to_add
         
