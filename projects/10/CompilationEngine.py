@@ -7,21 +7,31 @@ class TokenizedText:
 
     def __init__(self, textfile):
         self.tokens = []
+        i = 0
         for line in textfile:
-            self.tokens.append(TokenizedLine(line))
+            self.tokens.append(TokenizedLine(line, i, self))
+            i += 1
 
-class TokenizedLine:
+class TokenizedLine():
 
-    def __init__(self, line):
-        self.kind = self.getType(line)
-        self.name = self.getName(line)
+    def __init__(self, line, index, text):
+        self.kind = self._getType(line)
+        self.name = self._getName(line)
+        self.index = index
         self.line = line
+        self.text = text
 
-    def getType(self, line):
+    def next(self):
+        return self.text.tokens[self.index+1]
+
+    def prev(self):
+        return self.text.tokens[self.index-1]
+
+    def _getType(self, line):
         """Returns the token type of the xml line."""
         return line[line.find('<')+1:line.find('>')]
 
-    def getName(self, line):
+    def _getName(self, line):
         """Returns the word/symbol of the xml token."""
         return line[line.find('>')+2:line.find('<',2)-1]
 
@@ -32,30 +42,34 @@ def process_tokens(text):
     unoplist = ['-', '~']
     keyconstlist = ['true', 'false', 'null', 'this']
 
-    def compileClass(line, depth):
+    def compileClass(token, depth):
         """Compiles a complete class."""
         print "compileClass"
-        lines_to_add = [(('  '*depth) + "<class>\n"), ('  '*(depth+1) + line)]
-        line = text.next()
-        assert getType(line) in ['identifier', 'keyword']
+        lines_to_add = [('  '*depth + "<class>\n", 
+                         '  '*(depth+1) + token.line)]
+        token = token.next()
+        #token = text.tokens[token.index+1]
+        print "Success"
+        print token.index
+        assert token.kind in ['identifier', 'keyword']
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
-        assert getType(line) == 'symbol' and getName(line) == '{'
+        assert token.kind == 'symbol' and token.name == '{'
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
-        assert (getType(line) == 'keyword' and getName(line) in ['field',
-            'static']) or (getType(line) == 'symbol' and getName(line) == '}')
-        while getName(line) in ['field', 'static']:
+        assert (token.kind == 'keyword' and token.name in ['field',
+            'static']) or (token.kind == 'symbol' and token.name == '}')
+        while token.name in ['field', 'static']:
             lines_to_add.extend(compileClassVarDec(line, depth+1))
             line = text.next()
-        while getType(line) == 'keyword' and getName(line) in ['constructor', 
+        while token.kind == 'keyword' and token.name in ['constructor', 
                             'function', 'method']:
             lines_to_add.extend(compileSubroutine(line, depth+1))
             line = text.next()
         print lines_to_add
         print len(lines_to_add)
         print line
-        assert getType(line) == 'symbol' and getName(line) == '}'
+        assert token.kind == 'symbol' and token.name == '}'
         lines_to_add.extend(['  '*(depth+1) + line,
                              '  '*(depth) + "</class>\n"])
         return lines_to_add
@@ -66,19 +80,19 @@ def process_tokens(text):
         lines_to_add = ['  '*depth + "<classVarDec>\n",
                         '  '*(depth+1) + line]
         line = text.next()
-        assert getType(line) in ['keyword', 'identifier']
+        assert token.kind in ['keyword', 'identifier']
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
-        assert getType(line) in ['keyword', 'identifier']
+        assert token.kind in ['keyword', 'identifier']
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
-        while getType(line) == 'symbol' and getName(line) == ',':
+        while token.kind == 'symbol' and token.name == ',':
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
-            assert getType(line) in ['keyword', 'identifier']
+            assert token.kind in ['keyword', 'identifier']
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
-        assert getType(line) == 'symbol' and getName(line) == ';'
+        assert token.kind == 'symbol' and token.name == ';'
         lines_to_add.extend(['  '*(depth+1) + line,
                              '  '*depth + "</classVarDec>\n"])
         return lines_to_add
@@ -89,24 +103,24 @@ def process_tokens(text):
         lines_to_add = ['  '*depth + "<subroutineDec>\n",
                         '  '*(depth+1) + line]
         line = text.next()
-        assert getType(line) in ['keyword', 'identifier']
+        assert token.kind in ['keyword', 'identifier']
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
-        assert getType(line) == 'identifier'
+        assert token.kind == 'identifier'
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
-        assert getType(line) == 'symbol' and getName(line) == '('
+        assert token.kind == 'symbol' and token.name == '('
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
-        if getType(line) != 'symbol' and getName(line) != ')':
+        if token.kind != 'symbol' and token.name != ')':
             lines_to_add.extend(compileParameterList(line, depth+1))
         lines_to_add.append('  '*(depth+1) + "<symbol> ) </symbol>\n")
         line = text.next()
-        assert getType(line) == 'symbol' and getName(line) == '{'
+        assert token.kind == 'symbol' and token.name == '{'
         lines_to_add.extend(['  '*(depth+1) + "<subroutineBody>\n",
                              '  '*(depth+2) + line])
         line = text.next()
-        if getType(line) == 'keyword' and getName(line) == 'var':
+        if token.kind == 'keyword' and token.name == 'var':
             lines_to_add.extend(compileVarDec(line, depth+2))
             line = text.next()
         lines_to_add.extend(compileStatements(line, depth + 2))
@@ -121,15 +135,15 @@ def process_tokens(text):
         print "compileParameterList"
         run_through_once = False
         lines_to_add = ['  '*depth + "<parameterList>\n"]
-        while run_through_once == False or (getType(line) == 'symbol' and
-                                            getName(line) == ','):
-            if getType(line) == 'symbol' and getName(line) == ',':
+        while run_through_once == False or (token.kind == 'symbol' and
+                                            token.name == ','):
+            if token.kind == 'symbol' and token.name == ',':
                 lines_to_add.append('  '*(depth) + line)
                 line = text.next()
-            assert getType(line) in ['keyword', 'identifier']
+            assert token.kind in ['keyword', 'identifier']
             lines_to_add.append('  '*(depth) + line)
             line = text.next()
-            assert getType(line) == 'identifier'
+            assert token.kind == 'identifier'
             lines_to_add.append('  '*(depth) + line)
             line = text.next()
             run_through_once = True
@@ -143,15 +157,15 @@ def process_tokens(text):
         lines_to_add = ['  '*depth + "<varDec>\n",
                         '  '*(depth+1) + line]
         line = text.next()
-        while run_through_once == False or (getType(line) == 'symbol' and 
-                                            getName(line) == ','):
-            if getType(line) == 'symbol' and getName(line) == ',':
+        while run_through_once == False or (token.kind == 'symbol' and 
+                                            token.name == ','):
+            if token.kind == 'symbol' and token.name == ',':
                 lines_to_add.append('  '*(depth+1) + line)
                 line = text.next()
-            assert getType(line) in ['keyword', 'symbol']
+            assert token.kind in ['keyword', 'symbol']
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
-            assert getType(line) == 'identifier'
+            assert token.kind == 'identifier'
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
             run_through_once = True
@@ -163,11 +177,11 @@ def process_tokens(text):
         Compiles a sequence of statements, not including the enclosing \"{}\".
         """
         lines_to_add = ['  '*depth + "<statements>\n"]
-        while getType(line) != 'symbol' or getName(line) != '}':
+        while token.kind != 'symbol' or token.name != '}':
             print "compileStatements"
-            linename = getName(line)
+            linename = token.name
             print "Linename: %s" % linename
-            assert getType(line) == 'keyword' and linename in [
+            assert token.kind == 'keyword' and linename in [
                                     'let', 'if', 'while', 'do', 'return']
             if linename == 'let':
                 lines_to_add.extend(compileLet(line, depth)) 
@@ -190,17 +204,17 @@ def process_tokens(text):
         lines_to_add = ['  '*depth + "<doStatement>\n",
                         '  '*(depth+1) + line]
         line = text.next()
-        assert getType(line) == 'identifier'
+        assert token.kind == 'identifier'
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
-        assert getType(line) == 'symbol' and getName(line) in ['(', '.']
+        assert token.kind == 'symbol' and token.name in ['(', '.']
         lines_to_add.append('  '*(depth+1) + line)
-        if getName(line) == '.':
+        if token.name == '.':
             line = text.next()
-            assert getType(line) == 'identifier'
+            assert token.kind == 'identifier'
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
-            assert getType(line) == 'symbol' and getName(line) == '('
+            assert token.kind == 'symbol' and token.name == '('
             lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
         lines_to_add.extend(compileExpressionList(line, depth + 1))
@@ -208,7 +222,7 @@ def process_tokens(text):
         print "line: %s" % line
         lines_to_add.append('  '*(depth+1) + "<symbol> ) </symbol>\n")
         print lines_to_add
-        assert getType(line) == 'symbol' and getName(line) == ';'
+        assert token.kind == 'symbol' and token.name == ';'
         lines_to_add.extend(['  '*(depth+1) + line,
                              '  '*depth + "</doStatement>\n",])
         line = text.next()
@@ -222,20 +236,20 @@ def process_tokens(text):
                         '  '*(depth+1) + line]
         print line
         line = text.next()
-        assert getType(line) == 'identifier'
+        assert token.kind == 'identifier'
         lines_to_add.append('  '*(depth+1) + line)
         print line
         line = text.next()
-        if getType(line) == 'symbol' and getName(line) == '[':
+        if token.kind == 'symbol' and token.name == '[':
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
-            if getType(line) != 'symbol' or getName(line) != ']':
+            if token.kind != 'symbol' or token.name != ']':
                 lines_to_add.extend(compileExpression(line, depth + 1))
                 prev_line = lines_to_add.pop()
                 line = text.next()
             lines_to_add.append('  '*(depth+1) + "<symbol> ] </symbol>\n")
         print line
-        assert getType(line) == 'symbol' and getName(line) == '='
+        assert token.kind == 'symbol' and token.name == '='
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
         lines_to_add.extend(compileExpression(line, depth + 1))
@@ -251,14 +265,14 @@ def process_tokens(text):
         lines_to_add = ['  '*depth + "<whileStatement>\n",
                         '  '*(depth+1) + line]
         line = text.next()
-        assert getType(line) == 'symbol' and getName(line) == '('
+        assert token.kind == 'symbol' and token.name == '('
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
         lines_to_add.extend(compileExpression(line, depth + 1))
         prev_line = lines_to_add.pop()
         line = text.next()
         lines_to_add.append('  '*(depth+1) + "<symbol> ) </symbol>\n")
-        assert getType(line) == 'symbol' and getName(line) == '{'
+        assert token.kind == 'symbol' and token.name == '{'
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
         lines_to_add.extend(compileStatements(line, depth + 1))
@@ -276,7 +290,7 @@ def process_tokens(text):
         lines_to_add = ['  '*depth + "<returnStatement>\n",
                         '  '*(depth+1) + line]
         line = text.next()
-        if getType(line) != 'symbol' or getName(line) != ';':
+        if token.kind != 'symbol' or token.name != ';':
             lines_to_add.extend(compileExpression(line, depth))
             line = lines_to_add.pop()
         lines_to_add.extend(['  '*(depth+1) + line,
@@ -291,22 +305,22 @@ def process_tokens(text):
         lines_to_add = ['  '*depth + "<ifStatement>\n",
                         '  '*(depth+1) + line]
         line = text.next()
-        assert getType(line) == 'symbol' and getName(line) == '('
+        assert token.kind == 'symbol' and token.name == '('
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
         lines_to_add.extend(compileExpression(line, depth + 1))
         prev_line = lines_to_add.pop()
         line = text.next()
         lines_to_add.append('  '*(depth+1) + "<symbol> ) </symbol>\n")
-        assert getType(line) == 'symbol' and getName(line) == '{'
+        assert token.kind == 'symbol' and token.name == '{'
         lines_to_add.append('  '*(depth+1) + line)
         line = text.next()
         lines_to_add.extend(compileStatements(line, depth + 1))
         line = text.next()
         lines_to_add.append('  '*(depth+1) + "<symbol> } </symbol>\n")
-        if getType(line) == 'keyword' and getName(line) == 'else':
+        if token.kind == 'keyword' and token.name == 'else':
             lines_to_add.append('  '*(depth+1) + line)
-            assert getType(line) == 'symbol' and getName(line) == '{'
+            assert token.kind == 'symbol' and token.name == '{'
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
             lines_to_add.extend(compileStatements(line, depth + 1))
@@ -325,7 +339,7 @@ def process_tokens(text):
         prev_line = new_lines.pop()
         lines_to_add.append(new_lines)
         line = text.next()
-        if getType(line) == 'symbol' and getName(line) in oplist:
+        if token.kind == 'symbol' and token.name in oplist:
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
             new_lines = compileTerm(line, depth + 1)
@@ -346,46 +360,46 @@ def process_tokens(text):
         """
         print "compileTerm"
         lines_to_add = ['  '*depth + "<term>\n"]
-        if getType(line) == 'symbol':
-            if getName(line) in unoplist:
+        if token.kind == 'symbol':
+            if token.name in unoplist:
                 lines_to_add.append('  '*(depth+1) + line)
                 line = text.next()
                 new_lines = compileTerm(line, depth + 1)
                 prev_line = new_lines.pop()
                 lines_to_add.append(new_lines)
                 line = text.next()
-            elif getName(line) == '(':
+            elif token.name == '(':
                 lines_to_add.append('  '*(depth+1) + line)
                 line = text.next()
                 lines_to_add.extend(compileExpression(line, depth + 1))
                 prev_line = lines_to_add.pop()
                 line = text.next()
                 lines_to_add.append('  '*(depth+1) + "<symbol> ) </symbol>\n")
-        elif getType(line) == 'keyword':
-            assert getName(line) in keyconstlist
+        elif token.kind == 'keyword':
+            assert token.name in keyconstlist
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
-        elif getType(line) == 'identifier':
+        elif token.kind == 'identifier':
             print "Term identifier: %s" % line
             lines_to_add.append('  '*(depth+1) + line)
             line = text.next()
-            if getType(line) == 'symbol':
-                if getName(line) == '[':
+            if token.kind == 'symbol':
+                if token.name == '[':
                     lines_to_add.append('  '*(depth+1) + line)
                     line = text.next()
-                    if getType(line) != 'symbol' or getName(line) != ']':
+                    if token.kind != 'symbol' or token.name != ']':
                         lines_to_add.extend(compileExpression(line, depth + 1))
                         line = text.next()
                         prev_line = lines_to_add.pop()
                     lines_to_add.append('  '*(depth+1)+"<symbol> ] </symbol>\n")
-                elif getName(line) in ['(', '.']:
+                elif token.name in ['(', '.']:
                     lines_to_add.append('  '*(depth+1) + line)
-                    if getName(line) == '.':
+                    if token.name == '.':
                         line = text.next()
-                        assert getType(line) == 'identifier'
+                        assert token.kind == 'identifier'
                         lines_to_add.append('  '*(depth+1) + line)
                         line = text.next()
-                        assert getType(line)=='symbol' and getName(line)=='('
+                        assert token.kind=='symbol' and token.name=='('
                         lines_to_add.append('  '*(depth+1) + line)
                     line = text.next()
                     lines_to_add.extend(compileExpressionList(line, depth + 1))
@@ -399,10 +413,10 @@ def process_tokens(text):
         print "compileExpressionList"
         run_through_once = False
         lines_to_add = ['  '*depth + "<expressionList>\n"]
-        if getType(line) != 'symbol' and getName(line) != ')':
-            while run_through_once == False or (getType(line) == 'symbol' and 
-                                                getName(line) == ','): 
-                if getType(line) == 'symbol' and getName(line) == ',':
+        if token.kind != 'symbol' and token.name != ')':
+            while run_through_once == False or (token.kind == 'symbol' and 
+                                                token.name == ','): 
+                if token.kind == 'symbol' and token.name == ',':
                     lines_to_add.append('  '*(depth+1) + line)
                     line = text.next()
                 lines_to_add.extend(compileExpression(line, depth + 1))
@@ -414,10 +428,11 @@ def process_tokens(text):
         return lines_to_add
 
     print "Testing:"
-    print text.tokens[1]
-    print text.tokens[1].line
-    print text.tokens[1].kind
-    print text.tokens[1].name
+    print "Token = %s" % text.tokens[1]
+    print "Token.line = %s" % text.tokens[1].line
+    print "Token.kind = %s" % text.tokens[1].kind
+    print "Token.name = %s" % text.tokens[1].name
+    print "Token.index = %s" % text.tokens[1].index
 
     depth = 0
     for token in text.tokens:
