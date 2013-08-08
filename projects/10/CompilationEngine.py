@@ -62,8 +62,6 @@ def process_tokens(text):
         assert token.kind == 'symbol' and token.name == '{'
         lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        assert (token.kind == 'keyword' and token.name in ['field',
-            'static']) or (token.kind == 'symbol' and token.name == '}')
         while token.name in ['field', 'static']:
             lines_to_add.extend(compileClassVarDec(token, depth+1))
             token = token.next()
@@ -164,7 +162,7 @@ def process_tokens(text):
             if token.kind == 'symbol' and token.name == ',':
                 lines_to_add.append('  '*(depth+1) + token.line)
                 token = token.next()
-            assert token.kind in ['keyword', 'symbol']
+            assert token.kind in ['keyword', 'identifier']
             lines_to_add.append('  '*(depth+1) + token.line)
             token = token.next()
             assert token.kind == 'identifier'
