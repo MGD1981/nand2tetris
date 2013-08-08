@@ -33,7 +33,7 @@ def tokenize(text):
             while text[loc] != '"':
                 token.append(text[loc])
                 loc += 1
-            newtext.append("<StringConstant> %s </StringConstant>" % 
+            newtext.append("<stringConstant> %s </stringConstant>" % 
                            ''.join(token))
             loc += 1
         else: # Must be keyword or identifier
