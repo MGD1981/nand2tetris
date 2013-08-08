@@ -112,9 +112,9 @@ def process_tokens(text):
         assert token.kind == 'symbol' and token.name == '('
         lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        if token.kind != 'symbol' and token.name != ')':
-            lines_to_add.extend(compileParameterList(token, depth+1))
-        lines_to_add.append('  '*(depth+1) + "<symbol> ) </symbol>\n")
+        lines_to_add.extend(compileParameterList(token, depth+1))
+        token = token.reset()
+        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
         assert token.kind == 'symbol' and token.name == '{'
         lines_to_add.extend(['  '*(depth+1) + "<subroutineBody>\n",
@@ -135,8 +135,10 @@ def process_tokens(text):
         print "compileParameterList"
         run_through_once = False
         lines_to_add = ['  '*depth + "<parameterList>\n"]
-        while run_through_once == False or (token.kind == 'symbol' and
-                                            token.name == ','):
+        while run_through_once == False or (
+                token.kind == 'symbol' and token.name == ','):
+            if token.kind == 'symbol' and token.name == ')':
+                break
             if token.kind == 'symbol' and token.name == ',':
                 lines_to_add.append('  '*(depth) + token.line)
                 token = token.next()
