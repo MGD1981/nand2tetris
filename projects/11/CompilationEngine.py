@@ -9,6 +9,10 @@ class TokenizedText:
     def __init__(self, textfile):
         self.tokens = []
         self.cursor = 0
+
+        self.class_table = {}
+        self.subroutine_table = {}
+
         i = 0
         for line in textfile:
             if line[-1] != '\n':
@@ -16,6 +20,54 @@ class TokenizedText:
             else:
                 self.tokens.append(TokenizedLine(line, i, self))
             i += 1
+        return
+
+    def startSubroutine(self):
+        self.subroutine_table = {}
+        return
+
+    def define(self, name, id_type, kind):
+        assert kind in ['static', 'field', 'arg', 'var']
+        if kind in ['static', 'field']:
+            table = class_table
+        else:
+            table = subroutine_table
+        index = varCount(kind)
+        self.table[name] = (kind, id_type, index)
+        return
+
+    def varCount(self, kind):
+        assert kind in ['static', 'field', 'arg', 'var']
+        if kind in ['static', 'field']:
+            table = class_table
+        else:
+            table = subroutine_table
+        return sum(x[0] == kind for x in self.table.values())
+
+    def kindOf(self, name):
+        if name in self.subroutine_table.keys():
+            return self.subroutine_table[name][0]
+        elif name in self.class_table.keys():
+            return self.class_table[name][0]
+        else:
+            return None
+
+    def typeOf(self, name):
+        if name in self.subroutine_table.keys():
+            return self.subroutine_table[name][1]
+        elif name in self.class_table.keys():
+            return self.class_table[name][1]
+        else:
+            return None
+
+    def indexOf(self, name):
+        if name in self.subroutine_table.keys():
+            return self.subroutine_table[name][2]
+        elif name in self.class_table.keys():
+            return self.class_table[name][2]
+        else:
+            return None
+
 
 class TokenizedLine():
 
