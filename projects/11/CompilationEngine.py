@@ -102,9 +102,54 @@ class TokenizedLine():
 
 def process_tokens(text):
     newtext = []
+    segmentlist = ['const', 'arg', 'local', 'static', 'this', 'that', 
+                   'pointer', 'temp']
+    commandlist = ['add', 'sub', 'neg', 'eq', 'gt', 'lt', 'and', 'or', 'not']
     oplist = ['+', '-', '*', '/', '&amp;', '|', '&lt;', '&gt;', '=']
     unoplist = ['-', '~']
     keyconstlist = ['true', 'false', 'null', 'this']
+    ind = '   '
+
+    def writePush(segment, index=''):
+        assert segment in segmentlist
+        if index != '':
+            assert type(index) == int
+        return [ind + "push " + segment + " " + index + '\n']
+
+    def writePop(segment, index=''):
+        assert segment in segmentlist
+        if index != '':
+            assert type(index) == int
+        return [ind + "pop " + segment + " " + index + '\n']
+
+    def writeArtithmetic(command):
+        assert command in commandlist
+        return [ind + command + '\n']
+
+    def writeLabel(label):
+        assert type(label) == str
+        return ["label " + label + '\n']
+
+    def writeGoto(label):
+        assert type(label) == str
+        return [ind + "goto " + label + '\n']
+
+    def writeIf(label):
+        assert type(label) == str
+        return [ind + "if-goto " + label + '\n']
+
+    def writeCall(name, nArgs):
+        assert type(name) == str
+        assert type(nArgs) == int
+        return [ind + "call " + name + " " + nArgs + '\n']
+
+    def writeFunction(name, nLocals):
+        assert type(name) == str
+        assert type(nLocals) == int
+        return ["function " + name + " " + nLocals + '\n']
+
+    def writeReturn():
+        return [ind + 'return\n']
 
     def compileClass(token, depth):
         """Compiles a complete class."""
@@ -345,15 +390,12 @@ def process_tokens(text):
     def compileReturn(token, depth):
         """Compiles a return statement."""
         print "compileReturn"
-        lines_to_add = ['  '*depth + "<returnStatement>\n",
-                        '  '*(depth+1) + token.line]
+        lines_to_add = writeReturn()
         token = token.next()
         if token.kind != 'symbol' or token.name != ';':
             lines_to_add.extend(compileExpression(token, depth))
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
-        lines_to_add.extend(['  '*(depth+1) + token.line,
-                             '  '*depth + "</returnStatement>\n"])
         token = token.next()
         return lines_to_add
         
