@@ -459,6 +459,7 @@ def process_tokens(text, filename, directory=''):
         elif token.kind == 'keyword':
             assert token.name in keyconstlist
             if token.name == 'true':
+                print "HERE"
                 writePush('constant', 1)
                 writeArithmetic('neg')
             else:
