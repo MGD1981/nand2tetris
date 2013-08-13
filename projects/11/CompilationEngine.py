@@ -183,7 +183,7 @@ def process_tokens(text, filename, directory=''):
             token = token.next()
         assert token.kind == 'symbol' and token.name == '}'
         closeVM()
-        return 'xxx' 
+        return  
 
     def compileClassVarDec(token, depth):
         """Compiles a static declaration or a field declaration."""
@@ -208,7 +208,7 @@ def process_tokens(text, filename, directory=''):
             assert token.kind == 'symbol' and token.name == ';'
             token = token.next()
         print "Class Table: %r" % token.text.class_table
-        return 'xxx'
+        return 
         
     def compileSubroutine(token, depth):
         """Compiles a complete method, function, or constructor."""
@@ -244,7 +244,7 @@ def process_tokens(text, filename, directory=''):
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
         print "Subroutine Table: %r" % token.text.subroutine_table
-        return 'xxx'
+        return 
         
     def compileParameterList(token, depth):
         """Compiles a (possibly empty) parameter list, not including the 
@@ -266,7 +266,7 @@ def process_tokens(text, filename, directory=''):
             token.text.define(name, id_type, kind)
             token = token.next()
             run_through_once = True
-        return 'xxx'
+        return 
 
     def compileVarDec(token, depth):
         """Compiles a var declaration."""
@@ -290,7 +290,7 @@ def process_tokens(text, filename, directory=''):
                 token = token.next()
         assert token.kind == 'symbol' and token.name == ';'
         token = token.next()
-        return 'xxx'
+        return 
 
     def compileStatements(token, depth):
         """
@@ -311,7 +311,7 @@ def process_tokens(text, filename, directory=''):
             elif token.name == 'return':
                 compileReturn(token, depth+1) 
             token = token.reset()
-        return 'xxx'
+        return 
 
     def compileDo(token, depth):
         """Compiles a do statement."""
@@ -335,7 +335,7 @@ def process_tokens(text, filename, directory=''):
         token = token.next()
         assert token.kind == 'symbol' and token.name == ';'
         token = token.next()
-        return 'xxx'
+        return 
 
     def compileLet(token, depth):
         """Compiles a let statement."""
@@ -345,51 +345,38 @@ def process_tokens(text, filename, directory=''):
         var_to_define = token.name
         token = token.next()
         if token.kind == 'symbol' and token.name == '[':
-            lines_to_add.append('  '*(depth+1) + token.line)
             token = token.next()
             if token.kind != 'symbol' or token.name != ']':
-                lines_to_add.extend(compileExpression(token, depth + 1))
+                compileExpression(token, depth + 1)
                 token = token.reset()
             assert token.kind == 'symbol' and token.name == ']'
-            lines_to_add.append('  '*(depth+1) + token.line)
             token = token.next()
         assert token.kind == 'symbol' and token.name == '='
-        lines_to_add = []
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        lines_to_add.extend(compileExpression(token, depth + 1))
+        compileExpression(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
         #writePush(segment, indexOf(var_to_define))
-        lines_to_add.extend(['  '*(depth+1) + token.line,
-                             '  '*depth + "</letStatement>\n"])
         token = token.next()
-        return lines_to_add        
+        return         
 
     def compileWhile(token, depth):
         """Compiles a while statement."""
         print "compileWhile"
-        lines_to_add = ['  '*depth + "<whileStatement>\n",
-                        '  '*(depth+1) + token.line]
         token = token.next()
         assert token.kind == 'symbol' and token.name == '('
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        lines_to_add.extend(compileExpression(token, depth + 1))
+        compileExpression(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
         assert token.kind == 'symbol' and token.name == '{'
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        lines_to_add.extend(compileStatements(token, depth + 1))
+        compileStatements(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
-        lines_to_add.extend(['  '*(depth+1) + token.line,
-                             '  '*depth + "</whileStatement>\n"])
         token = token.next()
-        return lines_to_add
+        return 
 
     def compileReturn(token, depth):
         """Compiles a return statement."""
@@ -429,7 +416,7 @@ def process_tokens(text, filename, directory=''):
             token = token.reset()
             assert token.kind == 'symbol' and token.name == '}'
         token = token.next()
-        return 'xxx'
+        return 
 
     def compileExpression(token, depth):
         """Compiles an expression."""
@@ -444,7 +431,7 @@ def process_tokens(text, filename, directory=''):
                 writeArithmetic(oplist[operation])
             elif operation == '*':
                 writeCall('Math.multiply', 2)
-        return 'xxx'
+        return 
             
     def compileTerm(token, depth):
         """
@@ -472,15 +459,14 @@ def process_tokens(text, filename, directory=''):
         elif token.kind == 'keyword':
             assert token.name in keyconstlist
             if token.name == 'true':
-                index = -1
-                segment = 'constant'
-            elif token.name in ['false', 'null']:
-                index = 0
-                segment = 'constant'
+                writePush('constant', 1)
+                writeArithmetic('neg')
             else:
-                index = 0
-                segment = 'this'
-            writePush(segment, index)
+                if token.name in ['false', 'null']:
+                    segment = 'constant'
+                else:
+                    segment = 'this'
+                writePush(segment, 0)
             token = token.next()
         elif token.kind in ['identifier', 'integerConstant', 'stringConstant']:
             name = token.name
@@ -517,33 +503,30 @@ def process_tokens(text, filename, directory=''):
                     token = token.reset()
                     assert token.kind == 'symbol' and token.name == ')'
             token = token.next()
-        return 'xxx'
+        return 
                                 
     def compileExpressionList(token, depth):
         """Compiles a (possibly empty) comma-separated list of expressions."""
         print "compileExpressionList"
         params = 0
         run_through_once = False
-        lines_to_add = ['  '*depth + "<expressionList>\n"]
         while run_through_once == False or (token.kind == 'symbol' and 
                                             token.name == ','): 
             if token.kind == 'symbol' and token.name == ')':
                 break
             if token.kind == 'symbol' and token.name == ',':
-                lines_to_add.append('  '*(depth+1) + token.line)
                 token = token.next()
             params += 1
-            lines_to_add.extend(compileExpression(token, depth + 1))
+            compileExpression(token, depth + 1)
             token = token.reset()
             run_through_once = True
-        lines_to_add.append('  '*depth + "</expressionList>\n")
         return params
 
     depth = 0
     for token in text.tokens:
         if token.name == 'class' and token.kind == 'keyword':
             print "Class compile"
-            newtext.extend(compileClass(token, depth))
+            compileClass(token, depth)
         text.cursor += 1
     return ''.join(newtext)
 
@@ -557,7 +540,8 @@ def process_file(jack_file, jack_directory=''):
     #print JackTokenizer.process_file(jack_file, jack_directory)
     tokenized_file = JackTokenizer.process_file(jack_file, jack_directory)
     tokenized_text = TokenizedText(tokenized_file)
-    print "Wrote to: %s" % (jack_file[:-5] + '.xml')
+    process_tokens(tokenized_text, jack_file[:-5], jack_directory)
+    print "Wrote to: %s" % (jack_file[:-5] + '.vm')
     return
 
 def process_directory(xml_directory):
@@ -578,10 +562,10 @@ if __name__ == '__main__':
     else:
         slash_index = to_be_compiled.rfind('/')
     if '.' in to_be_compiled[slash_index:]:
-        if to_be_compiled[-4:] == '.xml':
+        if to_be_compiled[-5:] == '.jack':
             process_file(to_be_compiled)
         else:
-            print "\nArgument must be .xml file or directory."
+            print "\nArgument must be .jack file or directory."
             raise NameError
     else:
         process_directory(to_be_compiled)
