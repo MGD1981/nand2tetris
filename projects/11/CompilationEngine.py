@@ -28,21 +28,19 @@ class TokenizedText:
 
     def define(self, name, id_type, kind):
         assert kind in ['static', 'field', 'arg', 'var']
+        index = self.varCount(kind)
         if kind in ['static', 'field']:
-            table = class_table
+            self.class_table[name] = (kind, id_type, index)
         else:
-            table = subroutine_table
-        index = varCount(kind)
-        self.table[name] = (kind, id_type, index)
+            self.subroutine_table[name] = (kind, id_type, index)
         return
 
     def varCount(self, kind):
         assert kind in ['static', 'field', 'arg', 'var']
         if kind in ['static', 'field']:
-            table = class_table
+            return sum(x[0] == kind for x in self.class_table.values())
         else:
-            table = subroutine_table
-        return sum(x[0] == kind for x in self.table.values())
+            return sum(x[0] == kind for x in self.subroutine_table.values())
 
     def kindOf(self, name):
         if name in self.subroutine_table.keys():
@@ -100,247 +98,251 @@ class TokenizedLine():
         return line[line.find('>')+2:line.find('<',2)-1]
 
 
-def process_tokens(text):
+def process_tokens(text, filename, directory=''):
     newtext = []
-    segmentlist = ['const', 'arg', 'local', 'static', 'this', 'that', 
+    segmentdict = {'const':'constant', 'arg':'argument', 'local':'local',
+                   'var':'local', 'static':'static', 'field':'static', 
+                   'this':'this', 'that':'that', 'pointer':'pointer', 
+                   'temp':'temp'}
+    segmentlist = ['constant', 'argument', 'local', 'static', 'this', 'that', 
                    'pointer', 'temp']
     commandlist = ['add', 'sub', 'neg', 'eq', 'gt', 'lt', 'and', 'or', 'not']
-    oplist = ['+', '-', '*', '/', '&amp;', '|', '&lt;', '&gt;', '=']
-    unoplist = ['-', '~']
+    oplist = {'+':'add', '-':'sub', '*':None, '/':None, '&amp;':'and', '|':'or',              '&lt;':'lt', '&gt;':'gt', '=':'eq'}
+    unoplist = {'-':'neg', '~':'not'}
     keyconstlist = ['true', 'false', 'null', 'this']
     ind = '   '
+    vm_file = None
+
+    def newVM(classname, directory):
+        process_tokens.vm_file = open(directory + '/' + classname + '.vm', 'w')
 
     def writePush(segment, index=''):
         assert segment in segmentlist
         if index != '':
             assert type(index) == int
-        return [ind + "push " + segment + " " + index + '\n']
+        process_tokens.vm_file.write(ind + "push " + segment + " " + 
+                                     str(index) + '\n')
 
     def writePop(segment, index=''):
         assert segment in segmentlist
         if index != '':
             assert type(index) == int
-        return [ind + "pop " + segment + " " + index + '\n']
+        process_tokens.vm_file.write(ind + "pop " + segment + " " + 
+                                     str(index) + '\n')
 
-    def writeArtithmetic(command):
+    def writeArithmetic(command):
         assert command in commandlist
-        return [ind + command + '\n']
+        process_tokens.vm_file.write(ind + command + '\n')
 
     def writeLabel(label):
         assert type(label) == str
-        return ["label " + label + '\n']
+        process_tokens.vm_file.write("label " + label + '\n')
 
     def writeGoto(label):
         assert type(label) == str
-        return [ind + "goto " + label + '\n']
+        process_tokens.vm_file.write(ind + "goto " + label + '\n')
 
     def writeIf(label):
         assert type(label) == str
-        return [ind + "if-goto " + label + '\n']
+        process_tokens.vm_file.write(ind + "if-goto " + label + '\n')
 
     def writeCall(name, nArgs):
         assert type(name) == str
         assert type(nArgs) == int
-        return [ind + "call " + name + " " + nArgs + '\n']
+        process_tokens.vm_file.write(ind + "call " + name + " " + 
+                                     str(nArgs) + '\n')
 
     def writeFunction(name, nLocals):
         assert type(name) == str
         assert type(nLocals) == int
-        return ["function " + name + " " + nLocals + '\n']
+        process_tokens.vm_file.write("function " + filename + 
+                                     '.' + name + " " + str(nLocals) + '\n')
 
     def writeReturn():
-        return [ind + 'return\n']
+        process_tokens.vm_file.write(ind + 'return\n')
+
+    def closeVM():
+        process_tokens.vm_file.close()
+        
 
     def compileClass(token, depth):
         """Compiles a complete class."""
         print "compileClass"
-        lines_to_add = ['  '*depth + "<class>\n", 
-                        '  '*(depth+1) + token.line]
         token = token.next()
         assert token.kind in ['identifier', 'keyword']
-        lines_to_add.append('  '*(depth+1) + token.line)
+        newVM(token.name, directory)
         token = token.next()
         assert token.kind == 'symbol' and token.name == '{'
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
         if token.kind == 'keyword' and token.name in ['static', 'field']:
-            lines_to_add.extend(compileClassVarDec(token, depth+1))
+            compileClassVarDec(token, depth+1)
             token = token.reset()
         while token.kind == 'keyword' and token.name in ['constructor', 
                             'function', 'method']:
-            lines_to_add.extend(compileSubroutine(token, depth+1))
+            compileSubroutine(token, depth+1)
             token = token.next()
         assert token.kind == 'symbol' and token.name == '}'
-        lines_to_add.extend(['  '*(depth+1) + token.line,
-                             '  '*(depth) + "</class>\n"])
-        return lines_to_add
+        closeVM()
+        return 'xxx' 
 
     def compileClassVarDec(token, depth):
         """Compiles a static declaration or a field declaration."""
         print "compileClassVarDec"
-        lines_to_add = ['  '*depth + "<classVarDec>\n"]
         while token.kind == 'keyword' and token.name in ['static', 'field']:
-            lines_to_add.append('  '*(depth+1) + token.line)
+            kind = token.name
             token = token.next()
             assert token.kind in ['keyword', 'identifier']
-            lines_to_add.append('  '*(depth+1) + token.line)
+            id_type = token.name
             token = token.next()
             if token.kind != 'symbol' or token.name != ';':
                 assert token.kind in ['keyword', 'identifier']
-                lines_to_add.append('  '*(depth+1) + token.line)
+                name = token.name
+                token.text.define(name, id_type, kind)
                 token = token.next()
                 while token.kind == 'symbol' and token.name == ',':
-                    lines_to_add.append('  '*(depth+1) + token.line)
                     token = token.next()
                     assert token.kind in ['keyword', 'identifier']
-                    lines_to_add.append('  '*(depth+1) + token.line)
+                    name = token.name
+                    token.text.define(name, id_type, kind)
                     token = token.next()
             assert token.kind == 'symbol' and token.name == ';'
-            lines_to_add.append('  '*(depth+1) + token.line)
             token = token.next()
-        lines_to_add.append('  '*depth + "</classVarDec>\n")
-        return lines_to_add
+        print "Class Table: %r" % token.text.class_table
+        return 'xxx'
         
     def compileSubroutine(token, depth):
         """Compiles a complete method, function, or constructor."""
         print "compileSubroutine"
-        lines_to_add = ['  '*depth + "<subroutineDec>\n",
-                        '  '*(depth+1) + token.line]
+        token.text.startSubroutine()
+        #kind = token.name
         token = token.next()
         assert token.kind in ['keyword', 'identifier']
-        lines_to_add.append('  '*(depth+1) + token.line)
+        #id_type = token.name
         token = token.next()
         assert token.kind == 'identifier'
-        lines_to_add.append('  '*(depth+1) + token.line)
+        name = token.name
         token = token.next()
         assert token.kind == 'symbol' and token.name == '('
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        lines_to_add.extend(compileParameterList(token, depth+1))
+        compileParameterList(token, depth+1)
+        nArgs = 0
+        for arg in token.text.subroutine_table:
+            if token.text.subroutine_table[arg][0] == 'arg':
+                nArgs += 1
+        writeFunction(name, nArgs)   
+        for arg in range(0, nArgs):
+            writePush('argument', arg)
         token = token.reset()
-        lines_to_add.append('  '*(depth+1) + token.line)
+        assert token.kind == 'symbol' and token.name == ')'
         token = token.next()
         assert token.kind == 'symbol' and token.name == '{'
-        lines_to_add.extend(['  '*(depth+1) + "<subroutineBody>\n",
-                             '  '*(depth+2) + token.line])
         token = token.next()
         while token.kind == 'keyword' and token.name == 'var':
-            lines_to_add.extend(compileVarDec(token, depth+2))
+            compileVarDec(token, depth+2)
             token = token.reset()
-        lines_to_add.extend(compileStatements(token, depth + 2))
-        lines_to_add.append('  '*(depth+2) + "<symbol> } </symbol>\n")
-        lines_to_add.extend(['  '*(depth+1) + "</subroutineBody>\n",
-                             '  '*depth + "</subroutineDec>\n"])
-        return lines_to_add
+        compileStatements(token, depth + 2)
+        token = token.reset()
+        assert token.kind == 'symbol' and token.name == '}'
+        print "Subroutine Table: %r" % token.text.subroutine_table
+        return 'xxx'
         
     def compileParameterList(token, depth):
         """Compiles a (possibly empty) parameter list, not including the 
            enclosing \"()\"."""
         print "compileParameterList"
+        kind = 'arg'
         run_through_once = False
-        lines_to_add = ['  '*depth + "<parameterList>\n"]
         while run_through_once == False or (
                 token.kind == 'symbol' and token.name == ','):
             if token.kind == 'symbol' and token.name == ')':
                 break
             if token.kind == 'symbol' and token.name == ',':
-                lines_to_add.append('  '*(depth) + token.line)
                 token = token.next()
             assert token.kind in ['keyword', 'identifier']
-            lines_to_add.append('  '*(depth) + token.line)
+            id_type = token.name
             token = token.next()
             assert token.kind == 'identifier'
-            lines_to_add.append('  '*(depth) + token.line)
+            name = token.name
+            token.text.define(name, id_type, kind)
             token = token.next()
             run_through_once = True
-        lines_to_add.append('  '*depth + "</parameterList>\n")
-        return lines_to_add
+        return 'xxx'
 
     def compileVarDec(token, depth):
         """Compiles a var declaration."""
         print "compileVarDec"
         run_through_once = False
-        lines_to_add = ['  '*depth + "<varDec>\n"]
-        lines_to_add.append('  '*(depth+1) + token.line)
+        kind = token.name
         token = token.next()
         assert token.kind in ['keyword', 'identifier']
-        lines_to_add.append('  '*(depth+1) + token.line)
+        id_type = token.name
         token = token.next()
         if token.kind != 'symbol' or token.name != ';':
             assert token.kind in ['keyword', 'identifier']
-            lines_to_add.append('  '*(depth+1) + token.line)
+            name = token.name
+            token.text.define(name, id_type, kind)
             token = token.next()
             while token.kind == 'symbol' and token.name == ',':
-                lines_to_add.append('  '*(depth+1) + token.line)
                 token = token.next()
                 assert token.kind == 'identifier'
-                lines_to_add.append('  '*(depth+1) + token.line)
+                name = token.name
+                token.text.define(name, id_type, kind)
                 token = token.next()
         assert token.kind == 'symbol' and token.name == ';'
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        lines_to_add.append('  '*depth + "</varDec>\n")
-        return lines_to_add
+        return 'xxx'
 
     def compileStatements(token, depth):
         """
         Compiles a sequence of statements, not including the enclosing \"{}\".
         """
-        lines_to_add = ['  '*depth + "<statements>\n"]
         while token.kind != 'symbol' or token.name != '}':
             print "compileStatements"
             assert token.kind == 'keyword' and token.name in [
                                     'let', 'if', 'while', 'do', 'return']
             if token.name == 'let':
-                lines_to_add.extend(compileLet(token, depth+1)) 
+                compileLet(token, depth+1) 
             elif token.name == 'if':
-                lines_to_add.extend(compileIf(token, depth+1)) 
+                compileIf(token, depth+1) 
             elif token.name == 'while':
-                lines_to_add.extend(compileWhile(token, depth+1)) 
+                compileWhile(token, depth+1) 
             elif token.name == 'do':
-                lines_to_add.extend(compileDo(token, depth+1)) 
+                compileDo(token, depth+1) 
             elif token.name == 'return':
-                lines_to_add.extend(compileReturn(token, depth+1)) 
+                compileReturn(token, depth+1) 
             token = token.reset()
-        lines_to_add.append('  '*depth + "</statements>\n")
-        return lines_to_add
+        return 'xxx'
 
     def compileDo(token, depth):
         """Compiles a do statement."""
         print "compileDo"
-        lines_to_add = ['  '*depth + "<doStatement>\n",
-                        '  '*(depth+1) + token.line]
         token = token.next()
         assert token.kind == 'identifier'
-        lines_to_add.append('  '*(depth+1) + token.line)
+        name = token.name
         token = token.next()
         assert token.kind == 'symbol' and token.name in ['(', '.']
-        lines_to_add.append('  '*(depth+1) + token.line)
         if token.name == '.':
             token = token.next()
             assert token.kind == 'identifier'
-            lines_to_add.append('  '*(depth+1) + token.line)
+            name = name + '.' + token.name
             token = token.next()
             assert token.kind == 'symbol' and token.name == '('
-            lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        lines_to_add.extend(compileExpressionList(token, depth + 1))
-        lines_to_add.append('  '*(depth+1) + token.line)
+        nArgs = compileExpressionList(token, depth + 1)
+        writeCall(name, nArgs)
+        token = token.reset()
+        assert token.kind == 'symbol' and token.name == ')'
         token = token.next()
         assert token.kind == 'symbol' and token.name == ';'
-        lines_to_add.extend(['  '*(depth+1) + token.line,
-                             '  '*depth + "</doStatement>\n",])
         token = token.next()
-        return lines_to_add
+        return 'xxx'
 
     def compileLet(token, depth):
         """Compiles a let statement."""
         print "compileLet"
-        lines_to_add = ['  '*depth + "<letStatement>\n",
-                        '  '*(depth+1) + token.line]
         token = token.next()
         assert token.kind == 'identifier'
-        lines_to_add.append('  '*(depth+1) + token.line)
+        var_to_define = token.name
         token = token.next()
         if token.kind == 'symbol' and token.name == '[':
             lines_to_add.append('  '*(depth+1) + token.line)
@@ -352,11 +354,13 @@ def process_tokens(text):
             lines_to_add.append('  '*(depth+1) + token.line)
             token = token.next()
         assert token.kind == 'symbol' and token.name == '='
+        lines_to_add = []
         lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
         lines_to_add.extend(compileExpression(token, depth + 1))
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
+        #writePush(segment, indexOf(var_to_define))
         lines_to_add.extend(['  '*(depth+1) + token.line,
                              '  '*depth + "</letStatement>\n"])
         token = token.next()
@@ -390,61 +394,57 @@ def process_tokens(text):
     def compileReturn(token, depth):
         """Compiles a return statement."""
         print "compileReturn"
-        lines_to_add = writeReturn()
+        writeReturn()
         token = token.next()
         if token.kind != 'symbol' or token.name != ';':
-            lines_to_add.extend(compileExpression(token, depth))
+            compileExpression(token, depth)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
         token = token.next()
-        return lines_to_add
+        return 'xxx'
         
     def compileIf(token, depth):
         """Compiles an if statement, possibly with a trailing else clause."""
         print "compileIf"
-        lines_to_add = ['  '*depth + "<ifStatement>\n",
-                        '  '*(depth+1) + token.line]
         token = token.next()
         assert token.kind == 'symbol' and token.name == '('
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        lines_to_add.extend(compileExpression(token, depth + 1))
+        compileExpression(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
         assert token.kind == 'symbol' and token.name == '{'
-        lines_to_add.append('  '*(depth+1) + token.line)
         token = token.next()
-        lines_to_add.extend(compileStatements(token, depth + 1))
+        compileStatements(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
-        lines_to_add.append('  '*(depth+1) + token.line)
         if (token.peekahead()).kind == 'keyword' and (
                 token.peekahead()).name == 'else':
             token = token.next()
-            lines_to_add.append('  '*(depth+1) + token.line)
-            assert token.kind == 'symbol' and token.name == '{'
-            lines_to_add.append('  '*(depth+1) + token.line)
             token = token.next()
-            lines_to_add.extend(compileStatements(token, depth + 1))
-            lines_to_add.append('  '*(depth+1) + "<symbol> } </symbol>\n")
-        lines_to_add.append('  '*depth + "</ifStatement>\n")
+            #TODO: write code for else
+            assert token.kind == 'symbol' and token.name == '{'
+            token = token.next()
+            compileStatements(token, depth + 1)
+            token = token.reset()
+            assert token.kind == 'symbol' and token.name == '}'
         token = token.next()
-        return lines_to_add
+        return 'xxx'
 
     def compileExpression(token, depth):
         """Compiles an expression."""
         print "compileExpression"
-        lines_to_add = ['  '*depth + "<expression>\n"]
-        lines_to_add.extend(compileTerm(token, depth + 1))
+        compileTerm(token, depth + 1)
         token = token.reset()
         if token.kind == 'symbol' and token.name in oplist:
-            lines_to_add.append('  '*(depth+1) + token.line)
+            operation = token.name
             token = token.next()
-            lines_to_add.extend(compileTerm(token, depth + 1))
-        lines_to_add.append('  '*depth + "</expression>\n")
-        return lines_to_add
+            compileTerm(token, depth + 1)
+            if operation in ['+', '-', '=', '&gt;', '&lt;', '&amp;', '|']:
+                writeArithmetic(oplist[operation])
+            elif operation == '*':
+                writeCall('Math.multiply', 2)
+        return 'xxx'
             
     def compileTerm(token, depth):
         """
@@ -457,59 +457,72 @@ def process_tokens(text):
         token is not part of this term and should not be advanced over.
         """
         print "compileTerm"
-        lines_to_add = ['  '*depth + "<term>\n"]
         if token.kind == 'symbol':
             if token.name in unoplist:
-                lines_to_add.append('  '*(depth+1) + token.line)
+                operation = token.name
                 token = token.next()
-                lines_to_add.extend(compileTerm(token, depth + 1))
+                compileTerm(token, depth + 1)
+                writeArithmetic(unoplist[operation])
             elif token.name == '(':
-                lines_to_add.append('  '*(depth+1) + token.line)
                 token = token.next()
-                lines_to_add.extend(compileExpression(token, depth + 1))
+                compileExpression(token, depth + 1)
                 token = token.reset()
                 assert token.kind == 'symbol' and token.name == ")"
-                lines_to_add.append('  '*(depth+1) + token.line)
                 token = token.next()
         elif token.kind == 'keyword':
             assert token.name in keyconstlist
-            lines_to_add.append('  '*(depth+1) + token.line)
+            if token.name == 'true':
+                index = -1
+                segment = 'constant'
+            elif token.name in ['false', 'null']:
+                index = 0
+                segment = 'constant'
+            else:
+                index = 0
+                segment = 'this'
+            writePush(segment, index)
             token = token.next()
         elif token.kind in ['identifier', 'integerConstant', 'stringConstant']:
-            lines_to_add.append('  '*(depth+1) + token.line)
+            name = token.name
+            if token.kind == 'integerConstant':
+                segment = 'constant'
+                writePush(segment, int(name))
+            elif token.kind == 'stringConstant':
+                print "Need to handle stringConstant"
+                #TODO
+            else:
+                if token.text.kindOf(token.name) == None:
+                    segment = 0
+                else:
+                    segment = segmentdict[token.text.kindOf(token.name)]
             nexttoken = token.peekahead()
             if nexttoken.kind == 'symbol':
                 if nexttoken.name == '[':
                     token = token.next()
-                    lines_to_add.append('  '*(depth+1) + token.line)
                     token = token.next()
                     if token.kind != 'symbol' or token.name != ']':
-                        lines_to_add.extend(compileExpression(token, depth + 1))
+                        compileExpression(token, depth + 1)
                         token = token.reset()
                     assert token.kind == 'symbol' and token.name == ']'
-                    lines_to_add.append('  '*(depth+1) + token.line)
                 elif nexttoken.name in ['(', '.']:
                     token = token.next()
-                    lines_to_add.append('  '*(depth+1) + token.line)
                     if token.name == '.':
                         token = token.next()
                         assert token.kind == 'identifier'
-                        lines_to_add.append('  '*(depth+1) + token.line)
+                        name = name + '.' + token.name
                         token = token.next()
                         assert token.kind=='symbol' and token.name=='('
-                        lines_to_add.append('  '*(depth+1) + token.line)
                     token = token.next()
-                    lines_to_add.extend(compileExpressionList(token, depth + 1))
+                    nLocals = compileExpressionList(token, depth + 1)
                     token = token.reset()
                     assert token.kind == 'symbol' and token.name == ')'
-                    lines_to_add.append('  '*(depth+1) + token.line)
             token = token.next()
-        lines_to_add.append('  '*depth + "</term>\n")
-        return lines_to_add
+        return 'xxx'
                                 
     def compileExpressionList(token, depth):
         """Compiles a (possibly empty) comma-separated list of expressions."""
         print "compileExpressionList"
+        params = 0
         run_through_once = False
         lines_to_add = ['  '*depth + "<expressionList>\n"]
         while run_through_once == False or (token.kind == 'symbol' and 
@@ -519,11 +532,12 @@ def process_tokens(text):
             if token.kind == 'symbol' and token.name == ',':
                 lines_to_add.append('  '*(depth+1) + token.line)
                 token = token.next()
+            params += 1
             lines_to_add.extend(compileExpression(token, depth + 1))
             token = token.reset()
             run_through_once = True
         lines_to_add.append('  '*depth + "</expressionList>\n")
-        return lines_to_add
+        return params
 
     depth = 0
     for token in text.tokens:
@@ -540,13 +554,10 @@ def process_file(jack_file, jack_directory=''):
     else:
         x = '/'
     print "Compiling file: %s" % (jack_directory + x + jack_file)
-    print JackTokenizer.process_file(jack_file, jack_directory)
+    #print JackTokenizer.process_file(jack_file, jack_directory)
     tokenized_file = JackTokenizer.process_file(jack_file, jack_directory)
-    compiled_file = open((jack_directory + x + jack_file[:-5] + '.xml'), 'w')
     tokenized_text = TokenizedText(tokenized_file)
-    compiled_file.write(process_tokens(tokenized_text))
     print "Wrote to: %s" % (jack_file[:-5] + '.xml')
-    compiled_file.close()
     return
 
 def process_directory(xml_directory):
