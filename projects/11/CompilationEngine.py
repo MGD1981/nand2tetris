@@ -117,6 +117,7 @@ def process_tokens(text, filename, directory=''):
         process_tokens.vm_file = open(directory + '/' + classname + '.vm', 'w')
 
     def writePush(segment, index=''):
+        print "Pushed " + segment + ' ' + str(index)
         assert segment in segmentlist
         if index != '':
             assert type(index) == int
@@ -124,6 +125,7 @@ def process_tokens(text, filename, directory=''):
                                      str(index) + '\n')
 
     def writePop(segment, index=''):
+        print "Popped " + segment + ' ' + str(index)
         assert segment in segmentlist
         if index != '':
             assert type(index) == int
@@ -131,6 +133,7 @@ def process_tokens(text, filename, directory=''):
                                      str(index) + '\n')
 
     def writeArithmetic(command):
+        print "Called " + command
         assert command in commandlist
         process_tokens.vm_file.write(ind + command + '\n')
 
@@ -147,21 +150,25 @@ def process_tokens(text, filename, directory=''):
         process_tokens.vm_file.write(ind + "if-goto " + label + '\n')
 
     def writeCall(name, nArgs):
+        print "Called " + name + ' ' + str(nArgs)
         assert type(name) == str
         assert type(nArgs) == int
         process_tokens.vm_file.write(ind + "call " + name + " " + 
                                      str(nArgs) + '\n')
 
     def writeFunction(name, nLocals):
+        print "Wrote function " + name + ' ' + str(nLocals)
         assert type(name) == str
         assert type(nLocals) == int
         process_tokens.vm_file.write("function " + filename + 
                                      '.' + name + " " + str(nLocals) + '\n')
 
     def writeReturn():
+        print "Wrote return"
         process_tokens.vm_file.write(ind + 'return\n')
 
     def closeVM():
+        print "Closed VM file"
         process_tokens.vm_file.close()
         
 
@@ -214,10 +221,8 @@ def process_tokens(text, filename, directory=''):
         """Compiles a complete method, function, or constructor."""
         print "compileSubroutine"
         token.text.startSubroutine()
-        #kind = token.name
         token = token.next()
         assert token.kind in ['keyword', 'identifier']
-        #id_type = token.name
         token = token.next()
         assert token.kind == 'identifier'
         name = token.name
@@ -225,13 +230,6 @@ def process_tokens(text, filename, directory=''):
         assert token.kind == 'symbol' and token.name == '('
         token = token.next()
         compileParameterList(token, depth+1)
-        nArgs = 0
-        for arg in token.text.subroutine_table:
-            if token.text.subroutine_table[arg][0] == 'arg':
-                nArgs += 1
-        writeFunction(name, nArgs)   
-        for arg in range(0, nArgs):
-            writePush('argument', arg)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
         token = token.next()
@@ -240,6 +238,11 @@ def process_tokens(text, filename, directory=''):
         while token.kind == 'keyword' and token.name == 'var':
             compileVarDec(token, depth+2)
             token = token.reset()
+        nLocals = 0
+        for arg in token.text.subroutine_table:
+            if token.text.subroutine_table[arg][0] == 'var':
+                nLocals += 1
+        writeFunction(name, nLocals)
         compileStatements(token, depth + 2)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
@@ -356,65 +359,81 @@ def process_tokens(text, filename, directory=''):
         compileExpression(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
-        #writePush(segment, indexOf(var_to_define))
+        writePop(segmentdict[token.text.kindOf(var_to_define)], 
+                 token.text.indexOf(var_to_define))
         token = token.next()
         return         
 
     def compileWhile(token, depth):
         """Compiles a while statement."""
         print "compileWhile"
+        label_name = filename + str(token.index)
         token = token.next()
         assert token.kind == 'symbol' and token.name == '('
         token = token.next()
+        writeLabel("CHECK"+label_name)
         compileExpression(token, depth + 1)
+        writeIf("START"+label_name)
+        writeGoto("END"+label_name)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
         token = token.next()
         assert token.kind == 'symbol' and token.name == '{'
         token = token.next()
+        writeLabel("START"+label_name)
         compileStatements(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
+        writeGoto("CHECK"+label_name)
+        writeLabel("END"+label_name)
         token = token.next()
         return 
 
     def compileReturn(token, depth):
         """Compiles a return statement."""
         print "compileReturn"
-        writeReturn()
         token = token.next()
         if token.kind != 'symbol' or token.name != ';':
             compileExpression(token, depth)
+        else:
+            writePush('constant', 0)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
+        writeReturn()
         token = token.next()
-        return 'xxx'
+        return 
         
     def compileIf(token, depth):
         """Compiles an if statement, possibly with a trailing else clause."""
         print "compileIf"
+        label_name = filename + str(token.index)
         token = token.next()
         assert token.kind == 'symbol' and token.name == '('
         token = token.next()
         compileExpression(token, depth + 1)
+        writeIf("START"+label_name)
+        writeGoto("ELSE"+label_name)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
         token = token.next()
         assert token.kind == 'symbol' and token.name == '{'
         token = token.next()
+        writeLabel("START"+label_name)
         compileStatements(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
+        writeGoto("END"+label_name)
         if (token.peekahead()).kind == 'keyword' and (
                 token.peekahead()).name == 'else':
             token = token.next()
             token = token.next()
-            #TODO: write code for else
             assert token.kind == 'symbol' and token.name == '{'
             token = token.next()
+            writeLabel("ELSE"+label_name)
             compileStatements(token, depth + 1)
             token = token.reset()
             assert token.kind == 'symbol' and token.name == '}'
+        writeLabel("END"+label_name)
         token = token.next()
         return 
 
@@ -459,7 +478,6 @@ def process_tokens(text, filename, directory=''):
         elif token.kind == 'keyword':
             assert token.name in keyconstlist
             if token.name == 'true':
-                pdb.set_trace()
                 writePush('constant', 1)
                 writeArithmetic('neg')
             else:
@@ -472,16 +490,17 @@ def process_tokens(text, filename, directory=''):
         elif token.kind in ['identifier', 'integerConstant', 'stringConstant']:
             name = token.name
             if token.kind == 'integerConstant':
-                segment = 'constant'
-                writePush(segment, int(name))
+                writePush('constant', int(name))
             elif token.kind == 'stringConstant':
                 print "Need to handle stringConstant"
                 #TODO
             else:
                 if token.text.kindOf(token.name) == None:
-                    segment = 0
+                    segment = 0 # Results in error - should ever get there?
                 else:
                     segment = segmentdict[token.text.kindOf(token.name)]
+                    index = token.text.indexOf(token.name)
+                    writePush(segment, index)
             nexttoken = token.peekahead()
             if nexttoken.kind == 'symbol':
                 if nexttoken.name == '[':
@@ -500,7 +519,8 @@ def process_tokens(text, filename, directory=''):
                         token = token.next()
                         assert token.kind=='symbol' and token.name=='('
                     token = token.next()
-                    nLocals = compileExpressionList(token, depth + 1)
+                    nArgs = compileExpressionList(token, depth + 1)
+                    writeCall(name, nArgs)
                     token = token.reset()
                     assert token.kind == 'symbol' and token.name == ')'
             token = token.next()
@@ -517,8 +537,8 @@ def process_tokens(text, filename, directory=''):
                 break
             if token.kind == 'symbol' and token.name == ',':
                 token = token.next()
-            params += 1
             compileExpression(token, depth + 1)
+            params += 1
             token = token.reset()
             run_through_once = True
         return params
