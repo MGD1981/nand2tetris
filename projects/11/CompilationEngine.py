@@ -423,13 +423,13 @@ def process_tokens(text, filename, directory=''):
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
         writeGoto("END"+label_name)
+        writeLabel("ELSE"+label_name)
         if (token.peekahead()).kind == 'keyword' and (
                 token.peekahead()).name == 'else':
             token = token.next()
             token = token.next()
             assert token.kind == 'symbol' and token.name == '{'
             token = token.next()
-            writeLabel("ELSE"+label_name)
             compileStatements(token, depth + 1)
             token = token.reset()
             assert token.kind == 'symbol' and token.name == '}'
