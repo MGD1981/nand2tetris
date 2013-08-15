@@ -221,11 +221,17 @@ def process_tokens(text, filename, directory=''):
         """Compiles a complete method, function, or constructor."""
         print "compileSubroutine"
         token.text.startSubroutine()
+        routine_type = token.name
+        if routine_type in ['method', 'constructor']:
+            writePush('pointer', 0)
+            writePop('this', 0)
         token = token.next()
         assert token.kind in ['keyword', 'identifier']
         token = token.next()
         assert token.kind == 'identifier'
         name = token.name
+        if routine_type == 'method':
+            token.text.define('this', name, 'arg')
         token = token.next()
         assert token.kind == 'symbol' and token.name == '('
         token = token.next()
@@ -242,6 +248,10 @@ def process_tokens(text, filename, directory=''):
         for arg in token.text.subroutine_table:
             if token.text.subroutine_table[arg][0] == 'var':
                 nLocals += 1
+        if routine_type == 'constructor':
+            writeCall('Memory.alloc', token.text.varCount('arg'))
+            writePop('pointer', 0)
+            writePush('this', 0)
         writeFunction(name, nLocals)
         compileStatements(token, depth + 2)
         token = token.reset()
@@ -400,6 +410,7 @@ def process_tokens(text, filename, directory=''):
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
         writeReturn()
+        writePop('temp', 0)
         token = token.next()
         return 
         
@@ -450,6 +461,8 @@ def process_tokens(text, filename, directory=''):
                 writeArithmetic(oplist[operation])
             elif operation == '*':
                 writeCall('Math.multiply', 2)
+            elif operation == '/':
+                writeCall('Math.divide', 2)
         return 
             
     def compileTerm(token, depth):
@@ -492,8 +505,17 @@ def process_tokens(text, filename, directory=''):
             if token.kind == 'integerConstant':
                 writePush('constant', int(name))
             elif token.kind == 'stringConstant':
-                print "Need to handle stringConstant"
-                #TODO
+                string_len = len(token.name)
+                writePush('constant', string_len)
+                writeCall('Memory.alloc',string_len)
+                writePop('pointer', 1)
+                writePush('that', 0)
+                writeCall('String.new', string_len)
+                char_index = 0
+                for char_index in range(0, string_len):
+                    writePush('constant', char_index)
+                    writeCall('String.charAt', 1)
+                    writeCall('String.appendChar', 1)
             else:
                 if token.text.kindOf(token.name) == None:
                     segment = 0 # Results in error - should ever get there?
