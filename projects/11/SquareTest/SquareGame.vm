@@ -1,0 +1,190 @@
+   push pointer 0
+   pop this 0
+   call Memory.alloc 0
+   pop pointer 0
+   push this 0
+function SquareGame.new 0
+   push constant 0
+   push constant 0
+   push constant 30
+   call Square.new 3
+   pop static 0
+   push constant 0
+   pop static 1
+   push this 0
+   return
+   pop temp 0
+   push pointer 0
+   pop this 0
+function SquareGame.dispose 0
+   call square.dispose 0
+   push this 0
+   call Memory.deAlloc 1
+   push constant 0
+   return
+   pop temp 0
+   push pointer 0
+   pop this 0
+function SquareGame.run 2
+   push constant 0
+   pop local 1
+label CHECKSquareGame84
+   push local 1
+   not
+   if-goto STARTSquareGame84
+   goto ENDSquareGame84
+label STARTSquareGame84
+label CHECKSquareGame90
+   push local 0
+   push constant 0
+   eq
+   if-goto STARTSquareGame90
+   goto ENDSquareGame90
+label STARTSquareGame90
+   call Keyboard.keyPressed 0
+   pop local 0
+   call moveSquare 0
+   goto CHECKSquareGame90
+label ENDSquareGame90
+   push local 0
+   push constant 81
+   eq
+   if-goto STARTSquareGame112
+   goto ELSESquareGame112
+label STARTSquareGame112
+   push constant 1
+   neg
+   pop local 1
+   goto ENDSquareGame112
+label ELSESquareGame112
+label ENDSquareGame112
+   push local 0
+   push constant 90
+   eq
+   if-goto STARTSquareGame125
+   goto ELSESquareGame125
+label STARTSquareGame125
+   call square.decSize 0
+   goto ENDSquareGame125
+label ELSESquareGame125
+label ENDSquareGame125
+   push local 0
+   push constant 88
+   eq
+   if-goto STARTSquareGame140
+   goto ELSESquareGame140
+label STARTSquareGame140
+   call square.incSize 0
+   goto ENDSquareGame140
+label ELSESquareGame140
+label ENDSquareGame140
+   push local 0
+   push constant 131
+   eq
+   if-goto STARTSquareGame155
+   goto ELSESquareGame155
+label STARTSquareGame155
+   push constant 1
+   pop static 1
+   goto ENDSquareGame155
+label ELSESquareGame155
+label ENDSquareGame155
+   push local 0
+   push constant 133
+   eq
+   if-goto STARTSquareGame168
+   goto ELSESquareGame168
+label STARTSquareGame168
+   push constant 2
+   pop static 1
+   goto ENDSquareGame168
+label ELSESquareGame168
+label ENDSquareGame168
+   push local 0
+   push constant 130
+   eq
+   if-goto STARTSquareGame181
+   goto ELSESquareGame181
+label STARTSquareGame181
+   push constant 3
+   pop static 1
+   goto ENDSquareGame181
+label ELSESquareGame181
+label ENDSquareGame181
+   push local 0
+   push constant 132
+   eq
+   if-goto STARTSquareGame194
+   goto ELSESquareGame194
+label STARTSquareGame194
+   push constant 4
+   pop static 1
+   goto ENDSquareGame194
+label ELSESquareGame194
+label ENDSquareGame194
+label CHECKSquareGame207
+   push local 0
+   push constant 0
+   eq
+   not
+   if-goto STARTSquareGame207
+   goto ENDSquareGame207
+label STARTSquareGame207
+   call Keyboard.keyPressed 0
+   pop local 0
+   call moveSquare 0
+   goto CHECKSquareGame207
+label ENDSquareGame207
+   goto CHECKSquareGame84
+label ENDSquareGame84
+   push constant 0
+   return
+   pop temp 0
+   push pointer 0
+   pop this 0
+function SquareGame.moveSquare 0
+   push static 1
+   push constant 1
+   eq
+   if-goto STARTSquareGame242
+   goto ELSESquareGame242
+label STARTSquareGame242
+   call square.moveUp 0
+   goto ENDSquareGame242
+label ELSESquareGame242
+label ENDSquareGame242
+   push static 1
+   push constant 2
+   eq
+   if-goto STARTSquareGame257
+   goto ELSESquareGame257
+label STARTSquareGame257
+   call square.moveDown 0
+   goto ENDSquareGame257
+label ELSESquareGame257
+label ENDSquareGame257
+   push static 1
+   push constant 3
+   eq
+   if-goto STARTSquareGame272
+   goto ELSESquareGame272
+label STARTSquareGame272
+   call square.moveLeft 0
+   goto ENDSquareGame272
+label ELSESquareGame272
+label ENDSquareGame272
+   push static 1
+   push constant 4
+   eq
+   if-goto STARTSquareGame287
+   goto ELSESquareGame287
+label STARTSquareGame287
+   call square.moveRight 0
+   goto ENDSquareGame287
+label ELSESquareGame287
+label ENDSquareGame287
+   push constant 5
+   call Sys.wait 1
+   push constant 0
+   return
+   pop temp 0
