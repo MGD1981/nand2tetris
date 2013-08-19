@@ -1,71 +1,68 @@
-   push pointer 0
-   pop this 0
-   call Memory.alloc 3
+function TestSquare.new 3
+   push constant 4
+   call Memory.alloc 1
    pop pointer 0
-   push this 0
-function TestSquare.new 0
    push argument 0
-   pop static 0
-   push argument 1
-   pop static 1
-   push argument 2
-   pop static 2
-   push this 0
-   return
-   pop temp 0
-   push pointer 0
    pop this 0
-function TestSquare.dispose 0
-   push this 0
+   push argument 1
+   pop this 1
+   push argument 2
+   pop this 2
+   push pointer 0
+   return
+function TestSquare.dispose 1
+   push argument 0
+   pop pointer 0
+   push pointer 0
    call Memory.deAlloc 1
    push constant 0
    return
    pop temp 0
-   push pointer 0
-   pop this 0
-function TestSquare.draw 0
+function TestSquare.draw 1
+   push argument 0
+   pop pointer 0
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
-   push static 2
+   push this 0
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    push constant 0
    return
    pop temp 0
-   push pointer 0
-   pop this 0
-function TestSquare.erase 0
+function TestSquare.erase 1
+   push argument 0
+   pop pointer 0
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
-   push static 2
+   push this 0
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    push constant 0
    return
    pop temp 0
-   push pointer 0
-   pop this 0
-function TestSquare.incSize 0
-   push static 1
-   push static 2
+function TestSquare.incSize 1
+   push argument 0
+   pop pointer 0
+   push this 1
+   push this 2
    add
    push constant 254
    lt
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
    push constant 510
    lt
@@ -74,10 +71,10 @@ function TestSquare.incSize 0
    goto ELSETestSquare140
 label STARTTestSquare140
    call erase 0
-   push static 2
+   push this 2
    push constant 2
    add
-   pop static 2
+   pop this 2
    call draw 0
    goto ENDTestSquare140
 label ELSETestSquare140
@@ -85,20 +82,20 @@ label ENDTestSquare140
    push constant 0
    return
    pop temp 0
-   push pointer 0
-   pop this 0
-function TestSquare.decSize 0
-   push static 2
+function TestSquare.decSize 1
+   push argument 0
+   pop pointer 0
+   push this 2
    push constant 2
    gt
    if-goto STARTTestSquare190
    goto ELSETestSquare190
 label STARTTestSquare190
    call erase 0
-   push static 2
+   push this 2
    push constant 2
    sub
-   pop static 2
+   pop this 2
    call draw 0
    goto ENDTestSquare190
 label ELSETestSquare190
@@ -106,10 +103,10 @@ label ENDTestSquare190
    push constant 0
    return
    pop temp 0
-   push pointer 0
-   pop this 0
-function TestSquare.moveUp 0
-   push static 1
+function TestSquare.moveUp 1
+   push argument 0
+   pop pointer 0
+   push this 1
    push constant 1
    gt
    if-goto STARTTestSquare224
@@ -117,32 +114,32 @@ function TestSquare.moveUp 0
 label STARTTestSquare224
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 2
+   push this 0
+   push this 1
+   push this 2
    add
    push constant 1
    sub
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
-   push static 1
+   push this 1
    push constant 2
    sub
-   pop static 1
+   pop this 1
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
-   push static 2
+   push this 0
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
+   push this 1
    push constant 1
    add
    call Screen.drawRectangle 4
@@ -152,11 +149,11 @@ label ENDTestSquare224
    push constant 0
    return
    pop temp 0
-   push pointer 0
-   pop this 0
-function TestSquare.moveDown 0
-   push static 1
-   push static 2
+function TestSquare.moveDown 1
+   push argument 0
+   pop pointer 0
+   push this 1
+   push this 2
    add
    push constant 254
    lt
@@ -165,33 +162,33 @@ function TestSquare.moveDown 0
 label STARTTestSquare306
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
-   push static 2
+   push this 0
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
+   push this 1
    push constant 1
    add
    call Screen.drawRectangle 4
-   push static 1
+   push this 1
    push constant 2
    add
-   pop static 1
+   pop this 1
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 2
+   push this 0
+   push this 1
+   push this 2
    add
    push constant 1
    sub
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    goto ENDTestSquare306
@@ -200,10 +197,10 @@ label ENDTestSquare306
    push constant 0
    return
    pop temp 0
-   push pointer 0
-   pop this 0
-function TestSquare.moveLeft 0
-   push static 0
+function TestSquare.moveLeft 1
+   push argument 0
+   pop pointer 0
+   push this 0
    push constant 1
    gt
    if-goto STARTTestSquare392
@@ -211,33 +208,33 @@ function TestSquare.moveLeft 0
 label STARTTestSquare392
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
    push constant 1
    sub
-   push static 1
-   push static 0
-   push static 2
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
-   push static 0
+   push this 0
    push constant 2
    sub
-   pop static 0
+   pop this 0
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
+   push this 0
+   push this 1
+   push this 0
    push constant 1
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    goto ENDTestSquare392
@@ -246,11 +243,11 @@ label ENDTestSquare392
    push constant 0
    return
    pop temp 0
-   push pointer 0
-   pop this 0
-function TestSquare.moveRight 0
-   push static 0
-   push static 2
+function TestSquare.moveRight 1
+   push argument 0
+   pop pointer 0
+   push this 0
+   push this 2
    add
    push constant 510
    lt
@@ -259,33 +256,33 @@ function TestSquare.moveRight 0
 label STARTTestSquare474
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
+   push this 0
+   push this 1
+   push this 0
    push constant 1
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
-   push static 0
+   push this 0
    push constant 2
    add
-   pop static 0
+   pop this 0
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
    push constant 1
    sub
-   push static 1
-   push static 0
-   push static 2
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    goto ENDTestSquare474

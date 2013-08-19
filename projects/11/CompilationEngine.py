@@ -101,7 +101,7 @@ class TokenizedLine():
 def process_tokens(text, filename, directory=''):
     newtext = []
     segmentdict = {'const':'constant', 'arg':'argument', 'local':'local',
-                   'var':'local', 'static':'static', 'field':'static', 
+                   'var':'local', 'static':'static', 'field':'this', 
                    'this':'this', 'that':'that', 'pointer':'pointer', 
                    'temp':'temp'}
     segmentlist = ['constant', 'argument', 'local', 'static', 'this', 'that', 
@@ -222,16 +222,11 @@ def process_tokens(text, filename, directory=''):
         print "compileSubroutine"
         token.text.startSubroutine()
         routine_type = token.name
-        if routine_type in ['method', 'constructor']:
-            writePush('pointer', 0)
-            writePop('this', 0)
         token = token.next()
         assert token.kind in ['keyword', 'identifier']
         token = token.next()
         assert token.kind == 'identifier'
         name = token.name
-        if routine_type == 'method':
-            token.text.define('this', name, 'arg')
         token = token.next()
         assert token.kind == 'symbol' and token.name == '('
         token = token.next()
@@ -244,15 +239,21 @@ def process_tokens(text, filename, directory=''):
         while token.kind == 'keyword' and token.name == 'var':
             compileVarDec(token, depth+2)
             token = token.reset()
-        nLocals = 0
+        nArgs = 0
         for arg in token.text.subroutine_table:
-            if token.text.subroutine_table[arg][0] == 'var':
-                nLocals += 1
-        if routine_type == 'constructor':
-            writeCall('Memory.alloc', token.text.varCount('arg'))
+            if token.text.subroutine_table[arg][0] == 'arg':
+                nArgs += 1
+        if routine_type == 'method':
+            nArgs += 1
+        writeFunction(name, nArgs)
+        if routine_type == 'method':
+            writePush('argument', 0)
             writePop('pointer', 0)
-            writePush('this', 0)
-        writeFunction(name, nLocals)
+        if routine_type == 'constructor':
+            writePush('constant', 
+                token.text.varCount('var') + token.text.varCount('field') + 1)
+            writeCall('Memory.alloc', 1)
+            writePop('pointer', 0)
         compileStatements(token, depth + 2)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
@@ -329,6 +330,7 @@ def process_tokens(text, filename, directory=''):
     def compileDo(token, depth):
         """Compiles a do statement."""
         print "compileDo"
+        nArgs = 0
         token = token.next()
         assert token.kind == 'identifier'
         name = token.name
@@ -337,11 +339,17 @@ def process_tokens(text, filename, directory=''):
         if token.name == '.':
             token = token.next()
             assert token.kind == 'identifier'
+            if (name in token.text.subroutine_table or
+                    name in token.text.class_table):
+                segment = segmentdict[token.text.kindOf(name)]
+                index = token.text.indexOf(name)
+                writePush(segment, index)
+                nArgs += 1
             name = name + '.' + token.name
             token = token.next()
             assert token.kind == 'symbol' and token.name == '('
         token = token.next()
-        nArgs = compileExpressionList(token, depth + 1)
+        nArgs = nArgs + compileExpressionList(token, depth + 1)
         writeCall(name, nArgs)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
@@ -402,15 +410,18 @@ def process_tokens(text, filename, directory=''):
     def compileReturn(token, depth):
         """Compiles a return statement."""
         print "compileReturn"
+        pop_temp = False
         token = token.next()
         if token.kind != 'symbol' or token.name != ';':
             compileExpression(token, depth)
         else:
+            pop_temp = True
             writePush('constant', 0)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
         writeReturn()
-        writePop('temp', 0)
+        if pop_temp == True:
+            writePop('temp', 0)
         token = token.next()
         return 
         
@@ -497,7 +508,7 @@ def process_tokens(text, filename, directory=''):
                 if token.name in ['false', 'null']:
                     segment = 'constant'
                 else:
-                    segment = 'this'
+                    segment = 'pointer'
                 writePush(segment, 0)
             token = token.next()
         elif token.kind in ['identifier', 'integerConstant', 'stringConstant']:
@@ -533,13 +544,23 @@ def process_tokens(text, filename, directory=''):
                         token = token.reset()
                     assert token.kind == 'symbol' and token.name == ']'
                 elif nexttoken.name in ['(', '.']:
-                    token = token.next()
-                    if token.name == '.':
+                    #token = token.next()
+                    if nexttoken.name == '.':
+                        if (token.name in token.text.subroutine_table or
+                                token.name in token.text.class_table):
+                            segment = segmentdict[token.text.kindOf(token.name)]
+                            index = token.text.indexOf(token.name)
+                            writePush(segment, index)
+                            token = token.next()
+                        else:
+                            token = token.next()
                         token = token.next()
                         assert token.kind == 'identifier'
                         name = name + '.' + token.name
                         token = token.next()
                         assert token.kind=='symbol' and token.name=='('
+                    else:
+                        token = token.next()
                     token = token.next()
                     nArgs = compileExpressionList(token, depth + 1)
                     writeCall(name, nArgs)

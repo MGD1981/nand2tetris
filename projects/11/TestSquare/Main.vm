@@ -1,11 +1,13 @@
-function Main.main 1
+function Main.main 0
    push constant 20
    push constant 100
    push constant 50
    call TestSquare.new 3
    pop local 0
-   call mysquare.draw 0
-   call mysquare.dispose 0
+   push local 0
+   call mysquare.draw 1
+   push local 0
+   call mysquare.dispose 1
    push constant 0
    return
    pop temp 0

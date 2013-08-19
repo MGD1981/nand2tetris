@@ -1,72 +1,70 @@
-   push pointer 0
-   pop this 0
-   call Memory.alloc 3
+function Square.new 3
+   push constant 0
+   call Memory.alloc 1
    pop pointer 0
-   push this 0
-function Square.new 0
    push argument 0
-   pop static 0
+   pop this 0
    push argument 1
-   pop static 1
+   pop this 1
    push argument 2
-   pop static 2
+   pop this 2
    call draw 0
    push this 0
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function Square.dispose 0
+   push constant 43770
+function Square.dispose 1
    push this 0
    call Memory.deAlloc 1
    push constant 0
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function Square.draw 0
+   push constant 43770
+function Square.draw 1
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
-   push static 2
+   push this 0
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    push constant 0
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function Square.erase 0
+   push constant 43770
+function Square.erase 1
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
-   push static 2
+   push this 0
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    push constant 0
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function Square.incSize 0
-   push static 1
-   push static 2
+   push constant 43770
+function Square.incSize 1
+   push this 1
+   push this 2
    add
    push constant 254
    lt
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
    push constant 510
    lt
@@ -75,10 +73,10 @@ function Square.incSize 0
    goto ELSESquare145
 label STARTSquare145
    call erase 0
-   push static 2
+   push this 2
    push constant 2
    add
-   pop static 2
+   pop this 2
    call draw 0
    goto ENDSquare145
 label ELSESquare145
@@ -87,19 +85,19 @@ label ENDSquare145
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function Square.decSize 0
-   push static 2
+   push constant 43770
+function Square.decSize 1
+   push this 2
    push constant 2
    gt
    if-goto STARTSquare195
    goto ELSESquare195
 label STARTSquare195
    call erase 0
-   push static 2
+   push this 2
    push constant 2
    sub
-   pop static 2
+   pop this 2
    call draw 0
    goto ENDSquare195
 label ELSESquare195
@@ -108,9 +106,9 @@ label ENDSquare195
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function Square.moveUp 0
-   push static 1
+   push constant 43770
+function Square.moveUp 1
+   push this 1
    push constant 1
    gt
    if-goto STARTSquare229
@@ -118,32 +116,32 @@ function Square.moveUp 0
 label STARTSquare229
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 2
+   push this 0
+   push this 1
+   push this 2
    add
    push constant 1
    sub
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
-   push static 1
+   push this 1
    push constant 2
    sub
-   pop static 1
+   pop this 1
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
-   push static 2
+   push this 0
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
+   push this 1
    push constant 1
    add
    call Screen.drawRectangle 4
@@ -154,10 +152,10 @@ label ENDSquare229
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function Square.moveDown 0
-   push static 1
-   push static 2
+   push constant 43770
+function Square.moveDown 1
+   push this 1
+   push this 2
    add
    push constant 254
    lt
@@ -166,33 +164,33 @@ function Square.moveDown 0
 label STARTSquare311
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
-   push static 2
+   push this 0
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
+   push this 1
    push constant 1
    add
    call Screen.drawRectangle 4
-   push static 1
+   push this 1
    push constant 2
    add
-   pop static 1
+   pop this 1
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 2
+   push this 0
+   push this 1
+   push this 2
    add
    push constant 1
    sub
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    goto ENDSquare311
@@ -202,9 +200,9 @@ label ENDSquare311
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function Square.moveLeft 0
-   push static 0
+   push constant 43770
+function Square.moveLeft 1
+   push this 0
    push constant 1
    gt
    if-goto STARTSquare397
@@ -212,33 +210,33 @@ function Square.moveLeft 0
 label STARTSquare397
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
    push constant 1
    sub
-   push static 1
-   push static 0
-   push static 2
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
-   push static 0
+   push this 0
    push constant 2
    sub
-   pop static 0
+   pop this 0
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
+   push this 0
+   push this 1
+   push this 0
    push constant 1
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    goto ENDSquare397
@@ -248,10 +246,10 @@ label ENDSquare397
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function Square.moveRight 0
-   push static 0
-   push static 2
+   push constant 43770
+function Square.moveRight 1
+   push this 0
+   push this 2
    add
    push constant 510
    lt
@@ -260,33 +258,33 @@ function Square.moveRight 0
 label STARTSquare479
    push constant 0
    call Screen.setColor 1
-   push static 0
-   push static 1
-   push static 0
+   push this 0
+   push this 1
+   push this 0
    push constant 1
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
-   push static 0
+   push this 0
    push constant 2
    add
-   pop static 0
+   pop this 0
    push constant 1
    neg
    call Screen.setColor 1
-   push static 0
-   push static 2
+   push this 0
+   push this 2
    add
    push constant 1
    sub
-   push static 1
-   push static 0
-   push static 2
+   push this 1
+   push this 0
+   push this 2
    add
-   push static 1
-   push static 2
+   push this 1
+   push this 2
    add
    call Screen.drawRectangle 4
    goto ENDSquare479

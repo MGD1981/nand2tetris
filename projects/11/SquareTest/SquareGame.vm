@@ -1,22 +1,20 @@
-   push pointer 0
-   pop this 0
-   call Memory.alloc 0
-   pop pointer 0
-   push this 0
 function SquareGame.new 0
+   push constant 0
+   call Memory.alloc 1
+   pop pointer 0
    push constant 0
    push constant 0
    push constant 30
    call Square.new 3
-   pop static 0
+   pop this 0
    push constant 0
-   pop static 1
+   pop this 1
    push this 0
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function SquareGame.dispose 0
+   push constant 43770
+function SquareGame.dispose 1
    call square.dispose 0
    push this 0
    call Memory.deAlloc 1
@@ -24,8 +22,8 @@ function SquareGame.dispose 0
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function SquareGame.run 2
+   push constant 43770
+function SquareGame.run 1
    push constant 0
    pop local 1
 label CHECKSquareGame84
@@ -85,7 +83,7 @@ label ENDSquareGame140
    goto ELSESquareGame155
 label STARTSquareGame155
    push constant 1
-   pop static 1
+   pop this 1
    goto ENDSquareGame155
 label ELSESquareGame155
 label ENDSquareGame155
@@ -96,7 +94,7 @@ label ENDSquareGame155
    goto ELSESquareGame168
 label STARTSquareGame168
    push constant 2
-   pop static 1
+   pop this 1
    goto ENDSquareGame168
 label ELSESquareGame168
 label ENDSquareGame168
@@ -107,7 +105,7 @@ label ENDSquareGame168
    goto ELSESquareGame181
 label STARTSquareGame181
    push constant 3
-   pop static 1
+   pop this 1
    goto ENDSquareGame181
 label ELSESquareGame181
 label ENDSquareGame181
@@ -118,7 +116,7 @@ label ENDSquareGame181
    goto ELSESquareGame194
 label STARTSquareGame194
    push constant 4
-   pop static 1
+   pop this 1
    goto ENDSquareGame194
 label ELSESquareGame194
 label ENDSquareGame194
@@ -141,9 +139,9 @@ label ENDSquareGame84
    return
    pop temp 0
    push pointer 0
-   pop this 0
-function SquareGame.moveSquare 0
-   push static 1
+   push constant 43770
+function SquareGame.moveSquare 1
+   push this 1
    push constant 1
    eq
    if-goto STARTSquareGame242
@@ -153,7 +151,7 @@ label STARTSquareGame242
    goto ENDSquareGame242
 label ELSESquareGame242
 label ENDSquareGame242
-   push static 1
+   push this 1
    push constant 2
    eq
    if-goto STARTSquareGame257
@@ -163,7 +161,7 @@ label STARTSquareGame257
    goto ENDSquareGame257
 label ELSESquareGame257
 label ENDSquareGame257
-   push static 1
+   push this 1
    push constant 3
    eq
    if-goto STARTSquareGame272
@@ -173,7 +171,7 @@ label STARTSquareGame272
    goto ENDSquareGame272
 label ELSESquareGame272
 label ENDSquareGame272
-   push static 1
+   push this 1
    push constant 4
    eq
    if-goto STARTSquareGame287
