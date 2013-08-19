@@ -224,6 +224,7 @@ def process_tokens(text, filename, directory=''):
         routine_type = token.name
         token = token.next()
         assert token.kind in ['keyword', 'identifier']
+        return_type = token.name
         token = token.next()
         assert token.kind == 'identifier'
         name = token.name
@@ -239,13 +240,10 @@ def process_tokens(text, filename, directory=''):
         while token.kind == 'keyword' and token.name == 'var':
             compileVarDec(token, depth+2)
             token = token.reset()
-        nArgs = 0
-        for arg in token.text.subroutine_table:
-            if token.text.subroutine_table[arg][0] == 'arg':
-                nArgs += 1
+        nLocals = token.text.varCount('var')
         if routine_type == 'method':
-            nArgs += 1
-        writeFunction(name, nArgs)
+            nLocals += 1
+        writeFunction(name, nLocals)
         if routine_type == 'method':
             writePush('argument', 0)
             writePop('pointer', 0)
@@ -351,6 +349,7 @@ def process_tokens(text, filename, directory=''):
         token = token.next()
         nArgs = nArgs + compileExpressionList(token, depth + 1)
         writeCall(name, nArgs)
+        writePop('temp', 0)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
         token = token.next()
@@ -410,18 +409,14 @@ def process_tokens(text, filename, directory=''):
     def compileReturn(token, depth):
         """Compiles a return statement."""
         print "compileReturn"
-        pop_temp = False
         token = token.next()
         if token.kind != 'symbol' or token.name != ';':
             compileExpression(token, depth)
         else:
-            pop_temp = True
             writePush('constant', 0)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
         writeReturn()
-        if pop_temp == True:
-            writePop('temp', 0)
         token = token.next()
         return 
         

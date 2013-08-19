@@ -1,5 +1,5 @@
 function SquareGame.new 0
-   push constant 0
+   push constant 3
    call Memory.alloc 1
    pop pointer 0
    push constant 0
@@ -9,21 +9,22 @@ function SquareGame.new 0
    pop this 0
    push constant 0
    pop this 1
-   push this 0
+   push pointer 0
    return
+function SquareGame.dispose 1
+   push argument 0
+   pop pointer 0
+   push this 0
+   call square.dispose 1
    pop temp 0
    push pointer 0
-   push constant 43770
-function SquareGame.dispose 1
-   call square.dispose 0
-   push this 0
    call Memory.deAlloc 1
+   pop temp 0
    push constant 0
    return
-   pop temp 0
-   push pointer 0
-   push constant 43770
-function SquareGame.run 1
+function SquareGame.run 3
+   push argument 0
+   pop pointer 0
    push constant 0
    pop local 1
 label CHECKSquareGame84
@@ -42,6 +43,7 @@ label STARTSquareGame90
    call Keyboard.keyPressed 0
    pop local 0
    call moveSquare 0
+   pop temp 0
    goto CHECKSquareGame90
 label ENDSquareGame90
    push local 0
@@ -62,7 +64,9 @@ label ENDSquareGame112
    if-goto STARTSquareGame125
    goto ELSESquareGame125
 label STARTSquareGame125
-   call square.decSize 0
+   push this 0
+   call square.decSize 1
+   pop temp 0
    goto ENDSquareGame125
 label ELSESquareGame125
 label ENDSquareGame125
@@ -72,7 +76,9 @@ label ENDSquareGame125
    if-goto STARTSquareGame140
    goto ELSESquareGame140
 label STARTSquareGame140
-   call square.incSize 0
+   push this 0
+   call square.incSize 1
+   pop temp 0
    goto ENDSquareGame140
 label ELSESquareGame140
 label ENDSquareGame140
@@ -131,23 +137,25 @@ label STARTSquareGame207
    call Keyboard.keyPressed 0
    pop local 0
    call moveSquare 0
+   pop temp 0
    goto CHECKSquareGame207
 label ENDSquareGame207
    goto CHECKSquareGame84
 label ENDSquareGame84
    push constant 0
    return
-   pop temp 0
-   push pointer 0
-   push constant 43770
 function SquareGame.moveSquare 1
+   push argument 0
+   pop pointer 0
    push this 1
    push constant 1
    eq
    if-goto STARTSquareGame242
    goto ELSESquareGame242
 label STARTSquareGame242
-   call square.moveUp 0
+   push this 0
+   call square.moveUp 1
+   pop temp 0
    goto ENDSquareGame242
 label ELSESquareGame242
 label ENDSquareGame242
@@ -157,7 +165,9 @@ label ENDSquareGame242
    if-goto STARTSquareGame257
    goto ELSESquareGame257
 label STARTSquareGame257
-   call square.moveDown 0
+   push this 0
+   call square.moveDown 1
+   pop temp 0
    goto ENDSquareGame257
 label ELSESquareGame257
 label ENDSquareGame257
@@ -167,7 +177,9 @@ label ENDSquareGame257
    if-goto STARTSquareGame272
    goto ELSESquareGame272
 label STARTSquareGame272
-   call square.moveLeft 0
+   push this 0
+   call square.moveLeft 1
+   pop temp 0
    goto ENDSquareGame272
 label ELSESquareGame272
 label ENDSquareGame272
@@ -177,12 +189,14 @@ label ENDSquareGame272
    if-goto STARTSquareGame287
    goto ELSESquareGame287
 label STARTSquareGame287
-   call square.moveRight 0
+   push this 0
+   call square.moveRight 1
+   pop temp 0
    goto ENDSquareGame287
 label ELSESquareGame287
 label ENDSquareGame287
    push constant 5
    call Sys.wait 1
+   pop temp 0
    push constant 0
    return
-   pop temp 0
