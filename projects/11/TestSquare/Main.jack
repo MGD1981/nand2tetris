@@ -1,0 +1,15 @@
+/* Main class initializes a new Square Dance game and starts it.
+ */
+class Main {
+
+    /** Initializes a new game and starts it. */    
+    function void main() {
+        var TestSquare mysquare;
+
+    let mysquare = TestSquare.new(20, 100, 50);
+        do mysquare.draw();
+    do mysquare.dispose();
+
+        return;
+    }
+}
