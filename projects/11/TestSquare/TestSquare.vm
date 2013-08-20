@@ -72,13 +72,13 @@ function TestSquare.incSize 1
    if-goto STARTTestSquare140
    goto ELSETestSquare140
 label STARTTestSquare140
-   call erase 0
+   call TestSquare.erase 0
    pop temp 0
    push this 2
    push constant 2
    add
    pop this 2
-   call draw 0
+   call TestSquare.draw 0
    pop temp 0
    goto ENDTestSquare140
 label ELSETestSquare140
@@ -94,13 +94,13 @@ function TestSquare.decSize 1
    if-goto STARTTestSquare190
    goto ELSETestSquare190
 label STARTTestSquare190
-   call erase 0
+   call TestSquare.erase 0
    pop temp 0
    push this 2
    push constant 2
    sub
    pop this 2
-   call draw 0
+   call TestSquare.draw 0
    pop temp 0
    goto ENDTestSquare190
 label ELSETestSquare190

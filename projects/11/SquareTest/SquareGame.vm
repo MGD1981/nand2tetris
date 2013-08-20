@@ -42,7 +42,7 @@ label CHECKSquareGame90
 label STARTSquareGame90
    call Keyboard.keyPressed 0
    pop local 0
-   call moveSquare 0
+   call SquareGame.moveSquare 0
    pop temp 0
    goto CHECKSquareGame90
 label ENDSquareGame90
@@ -136,7 +136,7 @@ label CHECKSquareGame207
 label STARTSquareGame207
    call Keyboard.keyPressed 0
    pop local 0
-   call moveSquare 0
+   call SquareGame.moveSquare 0
    pop temp 0
    goto CHECKSquareGame207
 label ENDSquareGame207

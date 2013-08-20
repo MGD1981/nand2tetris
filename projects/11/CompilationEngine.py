@@ -347,9 +347,9 @@ def process_tokens(text, filename, directory=''):
             else:
                 name = name + '.' + token.name
             token = token.next()
+        else:
+            name = filename + '.' + name
         assert token.kind == 'symbol' and token.name == '('
-        #else:
-        #    name = filename + '.' + name
         token = token.next()
         nArgs = nArgs + compileExpressionList(token, depth + 1)
         writeCall(name, nArgs)

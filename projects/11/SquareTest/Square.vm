@@ -8,7 +8,7 @@ function Square.new 0
    pop this 1
    push argument 2
    pop this 2
-   call draw 0
+   call Square.draw 0
    pop temp 0
    push pointer 0
    return
@@ -74,13 +74,13 @@ function Square.incSize 1
    if-goto STARTSquare145
    goto ELSESquare145
 label STARTSquare145
-   call erase 0
+   call Square.erase 0
    pop temp 0
    push this 2
    push constant 2
    add
    pop this 2
-   call draw 0
+   call Square.draw 0
    pop temp 0
    goto ENDSquare145
 label ELSESquare145
@@ -96,13 +96,13 @@ function Square.decSize 1
    if-goto STARTSquare195
    goto ELSESquare195
 label STARTSquare195
-   call erase 0
+   call Square.erase 0
    pop temp 0
    push this 2
    push constant 2
    sub
    pop this 2
-   call draw 0
+   call Square.draw 0
    pop temp 0
    goto ENDSquare195
 label ELSESquare195
