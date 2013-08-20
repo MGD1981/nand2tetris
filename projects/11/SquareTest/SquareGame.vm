@@ -15,7 +15,7 @@ function SquareGame.dispose 1
    push argument 0
    pop pointer 0
    push this 0
-   call square.dispose 1
+   call Square.dispose 1
    pop temp 0
    push pointer 0
    call Memory.deAlloc 1
@@ -65,7 +65,7 @@ label ENDSquareGame112
    goto ELSESquareGame125
 label STARTSquareGame125
    push this 0
-   call square.decSize 1
+   call Square.decSize 1
    pop temp 0
    goto ENDSquareGame125
 label ELSESquareGame125
@@ -77,7 +77,7 @@ label ENDSquareGame125
    goto ELSESquareGame140
 label STARTSquareGame140
    push this 0
-   call square.incSize 1
+   call Square.incSize 1
    pop temp 0
    goto ENDSquareGame140
 label ELSESquareGame140
@@ -154,7 +154,7 @@ function SquareGame.moveSquare 1
    goto ELSESquareGame242
 label STARTSquareGame242
    push this 0
-   call square.moveUp 1
+   call Square.moveUp 1
    pop temp 0
    goto ENDSquareGame242
 label ELSESquareGame242
@@ -166,7 +166,7 @@ label ENDSquareGame242
    goto ELSESquareGame257
 label STARTSquareGame257
    push this 0
-   call square.moveDown 1
+   call Square.moveDown 1
    pop temp 0
    goto ENDSquareGame257
 label ELSESquareGame257
@@ -178,7 +178,7 @@ label ENDSquareGame257
    goto ELSESquareGame272
 label STARTSquareGame272
    push this 0
-   call square.moveLeft 1
+   call Square.moveLeft 1
    pop temp 0
    goto ENDSquareGame272
 label ELSESquareGame272
@@ -190,7 +190,7 @@ label ENDSquareGame272
    goto ELSESquareGame287
 label STARTSquareGame287
    push this 0
-   call square.moveRight 1
+   call Square.moveRight 1
    pop temp 0
    goto ENDSquareGame287
 label ELSESquareGame287

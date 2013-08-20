@@ -5,10 +5,10 @@ function Main.main 1
    call TestSquare.new 3
    pop local 0
    push local 0
-   call mysquare.draw 1
+   call TestSquare.draw 1
    pop temp 0
    push local 0
-   call mysquare.dispose 1
+   call TestSquare.dispose 1
    pop temp 0
    push constant 0
    return

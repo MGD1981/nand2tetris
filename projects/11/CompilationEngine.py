@@ -343,9 +343,13 @@ def process_tokens(text, filename, directory=''):
                 index = token.text.indexOf(name)
                 writePush(segment, index)
                 nArgs += 1
-            name = name + '.' + token.name
+                name = token.text.typeOf(name) + '.' + token.name
+            else:
+                name = name + '.' + token.name
             token = token.next()
-            assert token.kind == 'symbol' and token.name == '('
+        assert token.kind == 'symbol' and token.name == '('
+        #else:
+        #    name = filename + '.' + name
         token = token.next()
         nArgs = nArgs + compileExpressionList(token, depth + 1)
         writeCall(name, nArgs)
@@ -534,7 +538,7 @@ def process_tokens(text, filename, directory=''):
                 if nexttoken.name == '[':
                     token = token.next()
                     token = token.next()
-                    if token.kind != 'symbol' or token.name != ']':
+                    if token.kind != 'symbol' or token.name == ']':
                         compileExpression(token, depth + 1)
                         token = token.reset()
                     assert token.kind == 'symbol' and token.name == ']'
@@ -547,15 +551,21 @@ def process_tokens(text, filename, directory=''):
                             index = token.text.indexOf(token.name)
                             writePush(segment, index)
                             token = token.next()
+                            token = token.next()
+                            #name = name + '.' + token.name
+                            #if token.text.typeOf(name) != filename:
+                            name = token.text.typeOf(
+                                    name) + '.' + token.name
                         else:
                             token = token.next()
-                        token = token.next()
+                            token = token.next()
+                            name = name + '.' + token.name
                         assert token.kind == 'identifier'
-                        name = name + '.' + token.name
                         token = token.next()
                         assert token.kind=='symbol' and token.name=='('
                     else:
                         token = token.next()
+                        name = filename + '.' + token.name
                     token = token.next()
                     nArgs = compileExpressionList(token, depth + 1)
                     writeCall(name, nArgs)
