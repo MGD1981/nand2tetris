@@ -366,24 +366,39 @@ def process_tokens(text, filename, directory=''):
     def compileLet(token, depth):
         """Compiles a let statement."""
         print "compileLet"
+        is_array = False
         token = token.next()
         assert token.kind == 'identifier'
         var_to_define = token.name
-        token = token.next()
-        if token.kind == 'symbol' and token.name == '[':
+        if token.peekahead().kind == 'symbol' and token.peekahead().name == '[':
+            is_array = True
+            token = token.next()
             token = token.next()
             if token.kind != 'symbol' or token.name != ']':
                 compileExpression(token, depth + 1)
                 token = token.reset()
+            else:
+                writePush('constant', 0)
+            writePop('temp', 1)
             assert token.kind == 'symbol' and token.name == ']'
+            token = token.next()
+        else:
             token = token.next()
         assert token.kind == 'symbol' and token.name == '='
         token = token.next()
         compileExpression(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ';'
-        writePop(segmentdict[token.text.kindOf(var_to_define)], 
-                 token.text.indexOf(var_to_define))
+        if is_array:
+            writePush(segmentdict[token.text.kindOf(var_to_define)],
+                      token.text.indexOf(var_to_define))
+            writePush('temp', 1)
+            writeArithmetic('add')
+            writePop('pointer', 1)
+            writePop('that', 0)
+        else:
+            writePop(segmentdict[token.text.kindOf(var_to_define)], 
+                     token.text.indexOf(var_to_define))
         token = token.next()
         return         
 
@@ -488,6 +503,7 @@ def process_tokens(text, filename, directory=''):
         token is not part of this term and should not be advanced over.
         """
         print "compileTerm"
+        is_array = False
         if token.kind == 'symbol':
             if token.name in unoplist:
                 operation = token.name
@@ -519,15 +535,14 @@ def process_tokens(text, filename, directory=''):
             elif token.kind == 'stringConstant':
                 string_len = len(token.name)
                 writePush('constant', string_len)
-                writeCall('Memory.alloc',string_len)
+                writeCall('String.new', 1)
                 writePop('pointer', 1)
-                writePush('that', 0)
-                writeCall('String.new', string_len)
-                char_index = 0
-                for char_index in range(0, string_len):
-                    writePush('constant', char_index)
-                    writeCall('String.charAt', 1)
-                    writeCall('String.appendChar', 1)
+                for i in range(0, string_len):
+                    writePush('pointer', 1)
+                    writePush('constant', ord(token.name[i]))
+                    writeCall('String.appendChar', 2) 
+                    writePop('temp', 0)
+                writePush('pointer', 1)
             else:
                 if token.text.kindOf(token.name) == None:
                     segment = 0 # Results in error - should ever get there?
@@ -538,11 +553,19 @@ def process_tokens(text, filename, directory=''):
             nexttoken = token.peekahead()
             if nexttoken.kind == 'symbol':
                 if nexttoken.name == '[':
+                    is_array = True
                     token = token.next()
                     token = token.next()
                     if token.kind != 'symbol' or token.name == ']':
                         compileExpression(token, depth + 1)
                         token = token.reset()
+                    else:
+                        writePush('constant', 0)
+                    #writePush(segmentdict[token.text.kindOf(name)], 
+                    #          token.text.indexOf(name))
+                    writeArithmetic('add')
+                    writePop('pointer', 1)
+                    writePush('that', 0)
                     assert token.kind == 'symbol' and token.name == ']'
                 elif nexttoken.name in ['(', '.']:
                     if nexttoken.name == '.':
