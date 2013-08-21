@@ -348,6 +348,8 @@ def process_tokens(text, filename, directory=''):
                 name = name + '.' + token.name
             token = token.next()
         else:
+            writePush('pointer', 0)
+            nArgs += 1
             name = filename + '.' + name
         assert token.kind == 'symbol' and token.name == '('
         token = token.next()
@@ -543,7 +545,6 @@ def process_tokens(text, filename, directory=''):
                         token = token.reset()
                     assert token.kind == 'symbol' and token.name == ']'
                 elif nexttoken.name in ['(', '.']:
-                    #token = token.next()
                     if nexttoken.name == '.':
                         if (token.name in token.text.subroutine_table or
                                 token.name in token.text.class_table):
@@ -552,8 +553,6 @@ def process_tokens(text, filename, directory=''):
                             writePush(segment, index)
                             token = token.next()
                             token = token.next()
-                            #name = name + '.' + token.name
-                            #if token.text.typeOf(name) != filename:
                             name = token.text.typeOf(
                                     name) + '.' + token.name
                         else:
@@ -564,6 +563,7 @@ def process_tokens(text, filename, directory=''):
                         token = token.next()
                         assert token.kind=='symbol' and token.name=='('
                     else:
+                        writePush('pointer', 0)
                         token = token.next()
                         name = filename + '.' + token.name
                     token = token.next()
