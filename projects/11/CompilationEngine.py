@@ -471,9 +471,9 @@ def process_tokens(text, filename, directory=''):
             compileStatements(token, depth + 1)
             token = token.reset()
             assert token.kind == 'symbol' and token.name == '}'
+            writeLabel("IF_END"+label_name)
         else:
             writeLabel("IF_FALSE"+label_name)
-            writeLabel("IF_END"+label_name)
         token = token.next()
         return 
 
