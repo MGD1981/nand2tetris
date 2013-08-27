@@ -1,0 +1,15 @@
+function Math.abs 0
+   push argument 0
+   push constant 0
+   lt
+   if-goto STARTMath12
+   goto ELSEMath12
+label STARTMath12
+   push argument 0
+   neg
+   pop argument 0
+   goto ENDMath12
+label ELSEMath12
+label ENDMath12
+   push argument 0
+   return

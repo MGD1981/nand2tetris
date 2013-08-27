@@ -1,0 +1,145 @@
+function Main.main 2
+   push constant 8001
+   push constant 16
+   push constant 1
+   neg
+   call Main.fillMemory 3
+   push constant 8000
+   push constant 123
+   call Memory.poke 2
+   push constant 8000
+   call Memory.peek 1
+   pop local 1
+   push constant 1
+   call Memory.alloc 1
+   pop pointer 1
+   push that 0
+   call String.new 1
+   push constant 0
+   call String.charAt 1
+   call String.appendChar 1
+   call Output.printChar 1
+   push local 1
+   call Output.printInt 1
+   call Output.println 0
+   push local 1
+   call Main.convert 1
+   push constant 0
+   return
+   pop temp 0
+function Main.convert 3
+   push constant 1
+   neg
+   pop local 2
+label CHECKMain106
+   push local 2
+   if-goto STARTMain106
+   goto ENDMain106
+label STARTMain106
+   push local 0
+   call Output.printInt 1
+   push constant 1
+   call Memory.alloc 1
+   pop pointer 1
+   push that 0
+   call String.new 1
+   push constant 0
+   call String.charAt 1
+   call String.appendChar 1
+   call Output.printChar 1
+   push local 1
+   call Output.printInt 1
+   call Output.println 0
+   push local 1
+   push constant 1
+   add
+   pop local 1
+   push local 0
+   call Main.nextMask 1
+   pop local 0
+   push constant 9000
+   push local 1
+   add
+   push local 0
+   call Memory.poke 2
+   push local 1
+   push constant 16
+   gt
+   not
+   if-goto STARTMain171
+   goto ELSEMain171
+label STARTMain171
+   push argument 0
+   push local 0
+   and
+   push constant 0
+   eq
+   not
+   if-goto STARTMain181
+   goto ELSEMain181
+label STARTMain181
+   push constant 8000
+   push local 1
+   add
+   push constant 1
+   call Memory.poke 2
+   goto ENDMain181
+label ELSEMain181
+   push constant 8000
+   push local 1
+   add
+   push constant 0
+   call Memory.poke 2
+label ENDMain181
+   goto ENDMain171
+label ELSEMain171
+   push constant 0
+   pop local 2
+label ENDMain171
+   goto CHECKMain106
+label ENDMain106
+   push constant 0
+   return
+   pop temp 0
+function Main.nextMask 0
+   push argument 0
+   push constant 0
+   eq
+   if-goto STARTMain244
+   goto ELSEMain244
+label STARTMain244
+   push constant 1
+   return
+   pop temp 0
+   goto ENDMain244
+label ELSEMain244
+   push argument 0
+   push constant 2
+   call Math.multiply 2
+   return
+   pop temp 0
+label ENDMain244
+function Main.fillMemory 0
+label CHECKMain278
+   push argument 1
+   push constant 0
+   gt
+   if-goto STARTMain278
+   goto ENDMain278
+label STARTMain278
+   push argument 0
+   push argument 2
+   call Memory.poke 2
+   push argument 1
+   push constant 1
+   sub
+   pop argument 1
+   push argument 0
+   push constant 1
+   add
+   pop argument 0
+   goto CHECKMain278
+label ENDMain278
+   push constant 0
+   return
+   pop temp 0

@@ -1,0 +1,16 @@
+class Main{
+
+    function void main() {
+        var int num;
+        var int new_num;
+        let num = Keyboard.readInt("Please enter an integer: ");
+        let new_num = Math.abs(num);
+        do Output.println();
+        do Output.printString("The absolute value of ");
+        do Output.printInt(num);
+        do Output.printString(" is: ");
+        do Output.printInt(new_num);
+        return;
+    }
+} 
+
