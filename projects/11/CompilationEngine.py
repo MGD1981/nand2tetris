@@ -539,13 +539,9 @@ def process_tokens(text, filename, directory=''):
                 string_len = len(token.name)
                 writePush('constant', string_len)
                 writeCall('String.new', 1)
-                #writePop('pointer', 1)
                 for i in range(0, string_len):
-                    #writePush('pointer', 1)
                     writePush('constant', ord(token.name[i]))
                     writeCall('String.appendChar', 2) 
-                    #writePop('temp', 0)
-                #writePush('pointer', 1)
             else:
                 if token.text.kindOf(token.name) == None:
                     segment = 0 # Results in error - should ever get there?
@@ -564,8 +560,6 @@ def process_tokens(text, filename, directory=''):
                         token = token.reset()
                     else:
                         writePush('constant', 0)
-                    #writePush(segmentdict[token.text.kindOf(name)], 
-                    #          token.text.indexOf(name))
                     writeArithmetic('add')
                     writePop('pointer', 1)
                     writePush('that', 0)
@@ -575,7 +569,7 @@ def process_tokens(text, filename, directory=''):
                         if (token.name in token.text.subroutine_table or
                                 token.name in token.text.class_table):
                             segment = segmentdict[token.text.kindOf(token.name)]
-                            index = token.text.indexOf(token.name)
+                            index = token.text.indexOf(token.name) + 1
                             writePush(segment, index)
                             token = token.next()
                             token = token.next()
