@@ -565,12 +565,14 @@ def process_tokens(text, filename, directory=''):
                     writePush('that', 0)
                     assert token.kind == 'symbol' and token.name == ']'
                 elif nexttoken.name in ['(', '.']:
+                    nArgs = 0
                     if nexttoken.name == '.':
                         if (token.name in token.text.subroutine_table or
                                 token.name in token.text.class_table):
                             segment = segmentdict[token.text.kindOf(token.name)]
-                            index = token.text.indexOf(token.name) + 1
-                            writePush(segment, index)
+                            nArgs += 1
+                            index = token.text.indexOf(token.name) 
+                            #writePush(segment, index)
                             token = token.next()
                             token = token.next()
                             name = token.text.typeOf(
@@ -587,7 +589,7 @@ def process_tokens(text, filename, directory=''):
                         token = token.next()
                         name = filename + '.' + token.name
                     token = token.next()
-                    nArgs = compileExpressionList(token, depth + 1)
+                    nArgs += compileExpressionList(token, depth + 1)
                     writeCall(name, nArgs)
                     token = token.reset()
                     assert token.kind == 'symbol' and token.name == ')'
