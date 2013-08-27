@@ -231,6 +231,8 @@ def process_tokens(text, filename, directory=''):
         token = token.next()
         assert token.kind == 'symbol' and token.name == '('
         token = token.next()
+        if routine_type == 'method':
+            token.text.define('this', filename, 'arg')
         compileParameterList(token, depth+1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
@@ -241,15 +243,13 @@ def process_tokens(text, filename, directory=''):
             compileVarDec(token, depth+2)
             token = token.reset()
         nLocals = token.text.varCount('var')
-        if routine_type == 'method':
-            nLocals += 1
         writeFunction(name, nLocals)
         if routine_type == 'method':
             writePush('argument', 0)
             writePop('pointer', 0)
         if routine_type == 'constructor':
             writePush('constant', 
-                token.text.varCount('var') + token.text.varCount('field') + 1)
+                token.text.varCount('var') + token.text.varCount('field'))
             writeCall('Memory.alloc', 1)
             writePop('pointer', 0)
         compileStatements(token, depth + 2)
@@ -409,21 +409,21 @@ def process_tokens(text, filename, directory=''):
         token = token.next()
         assert token.kind == 'symbol' and token.name == '('
         token = token.next()
-        writeLabel("CHECK"+label_name)
+        writeLabel("WHILE_EXP"+label_name)
         compileExpression(token, depth + 1)
-        writeIf("START"+label_name)
-        writeGoto("END"+label_name)
+        writeArithmetic('not')
+        writeIf("WHILE_END"+label_name)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
         token = token.next()
         assert token.kind == 'symbol' and token.name == '{'
         token = token.next()
-        writeLabel("START"+label_name)
+        #writeLabel("START"+label_name)
         compileStatements(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
-        writeGoto("CHECK"+label_name)
-        writeLabel("END"+label_name)
+        writeGoto("WHILE_EXP"+label_name)
+        writeLabel("WHILE_END"+label_name)
         token = token.next()
         return 
 
@@ -449,21 +449,21 @@ def process_tokens(text, filename, directory=''):
         assert token.kind == 'symbol' and token.name == '('
         token = token.next()
         compileExpression(token, depth + 1)
-        writeIf("START"+label_name)
-        writeGoto("ELSE"+label_name)
+        writeIf("IF_TRUE"+label_name)
+        writeGoto("IF_FALSE"+label_name)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == ')'
         token = token.next()
         assert token.kind == 'symbol' and token.name == '{'
         token = token.next()
-        writeLabel("START"+label_name)
+        writeLabel("IF_TRUE"+label_name)
         compileStatements(token, depth + 1)
         token = token.reset()
         assert token.kind == 'symbol' and token.name == '}'
-        writeGoto("END"+label_name)
-        writeLabel("ELSE"+label_name)
         if (token.peekahead()).kind == 'keyword' and (
                 token.peekahead()).name == 'else':
+            writeGoto("IF_END"+label_name)
+            writeLabel("IF_FALSE"+label_name)
             token = token.next()
             token = token.next()
             assert token.kind == 'symbol' and token.name == '{'
@@ -471,7 +471,9 @@ def process_tokens(text, filename, directory=''):
             compileStatements(token, depth + 1)
             token = token.reset()
             assert token.kind == 'symbol' and token.name == '}'
-        writeLabel("END"+label_name)
+        else:
+            writeLabel("IF_FALSE"+label_name)
+            writeLabel("IF_END"+label_name)
         token = token.next()
         return 
 
@@ -537,13 +539,13 @@ def process_tokens(text, filename, directory=''):
                 string_len = len(token.name)
                 writePush('constant', string_len)
                 writeCall('String.new', 1)
-                writePop('pointer', 1)
+                #writePop('pointer', 1)
                 for i in range(0, string_len):
-                    writePush('pointer', 1)
+                    #writePush('pointer', 1)
                     writePush('constant', ord(token.name[i]))
                     writeCall('String.appendChar', 2) 
-                    writePop('temp', 0)
-                writePush('pointer', 1)
+                    #writePop('temp', 0)
+                #writePush('pointer', 1)
             else:
                 if token.text.kindOf(token.name) == None:
                     segment = 0 # Results in error - should ever get there?
