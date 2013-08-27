@@ -480,7 +480,7 @@ def process_tokens(text, filename, directory=''):
         print "compileExpression"
         compileTerm(token, depth + 1)
         token = token.reset()
-        if token.kind == 'symbol' and token.name in oplist:
+        while token.kind == 'symbol' and token.name in oplist:
             operation = token.name
             token = token.next()
             compileTerm(token, depth + 1)
@@ -490,6 +490,7 @@ def process_tokens(text, filename, directory=''):
                 writeCall('Math.multiply', 2)
             elif operation == '/':
                 writeCall('Math.divide', 2)
+            token = token.reset()
         return 
             
     def compileTerm(token, depth):
